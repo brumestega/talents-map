@@ -1,0 +1,19 @@
+# Dipendenze (il progetto non ne richiede, ma per sicurezza)
+node_modules/
+package-lock.json
+
+# Build / output
+dist/
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+
+# Log
+npm-debug.log*
+*.log

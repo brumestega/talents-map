@@ -1,0 +1,23 @@
+{
+  "name": "mappa-talenti",
+  "version": "0.1.0",
+  "description": "Mappa dei Talenti — Web App (prototipo). Strumento numerologico del settore olistico, reverse-engineered da un file Excel .xlsm e ricostruito come web app statica.",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "npx --yes serve . --listen 3000",
+    "test": "node src/calculator.js --test",
+    "test:full": "node src/tests.js"
+  },
+  "keywords": [
+    "numerologia",
+    "olistico",
+    "mappa-talenti",
+    "web-app",
+    "vanilla-js"
+  ],
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=18"
+  }
+}
