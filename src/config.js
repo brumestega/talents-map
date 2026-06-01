@@ -7,6 +7,8 @@
 export const config = {
   lang: 'it',              // 'it' | 'en'
   showTooltips: true,      // tooltip sui numeri nei risultati
+  showArcani: true,        // mostra l'immagine dell'Arcano nel tooltip
+  arcaniPath: 'assets/arcani/', // percorso base delle immagini delle lame
   showStorico: true,       // pannello storico (richiede localStorage)
   showPdfExport: true,     // pulsante Salva / Stampa
   showThemeToggle: true,   // toggle tema chiaro/scuro
@@ -32,6 +34,8 @@ export function applicaUrlParams(search = (typeof location !== 'undefined' ? loc
   if (p.has('bgColor')) config.bgColor = p.get('bgColor');
   if (p.has('debug')) config.debug = bool(p.get('debug'));
   if (p.has('tooltips')) config.showTooltips = bool(p.get('tooltips'));
+  if (p.has('arcani')) config.showArcani = bool(p.get('arcani'));
+  if (p.has('arcaniPath')) config.arcaniPath = p.get('arcaniPath');
   if (p.has('storico')) config.showStorico = bool(p.get('storico'));
   if (p.has('pdf')) config.showPdfExport = bool(p.get('pdf'));
   if (p.has('theme')) config.showThemeToggle = bool(p.get('theme'));

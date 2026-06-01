@@ -50,9 +50,11 @@ talents-map/
 ├── reference/              # provenienza: Excel originale + prompts
 │   ├── MAPPA_DEI_TALENTI_COMPLETA.xlsm
 │   └── mappa_talenti_claude_code_prompts.md
+├── assets/
+│   └── arcani/             # 22 Arcani Maggiori (.webp + .jpg di fallback)
 └── src/
     ├── calculator.js       # ⭐ motore di calcolo puro (verificato)
-    ├── significati.js      # significati dei numeri 1–22 + descrizioni campi
+    ├── significati.js      # 22 Arcani (nomi, testi, slug immagine) + descrizioni campi
     ├── i18n.js             # internazionalizzazione IT / EN
     ├── config.js           # opzioni configurabili + URL params
     ├── storage.js          # persistenza localStorage (storico mappe)
@@ -106,6 +108,8 @@ previsti ma **non ancora implementati** in questa fase prototipo.
 | `bgColor`     | `?bgColor=%230A0A0F`   | Colore di sfondo                         |
 | `debug`       | `?debug=true`          | Pannello di debug nei risultati          |
 | `tooltips`    | `?tooltips=false`      | Disattiva i tooltip sui numeri           |
+| `arcani`      | `?arcani=false`        | Nasconde l'immagine dell'Arcano nel tooltip |
+| `arcaniPath`  | `?arcaniPath=...`      | Percorso base delle immagini (CDN/sottocartella) |
 | `storico`     | `?storico=false`       | Nasconde lo storico                      |
 | `pdf`         | `?pdf=false`           | Nasconde il pulsante Salva/Stampa        |
 | `theme`       | `?theme=false`         | Nasconde il toggle tema                  |
@@ -118,29 +122,36 @@ sono in `config`. I colori del tema sono variabili CSS in `:root` /
 
 ---
 
-## Aggiornare i significati dei numeri
+## Gli Arcani e i loro significati
+
+I numeri 1–22 corrispondono ai **22 Arcani Maggiori** (Tarocchi di Marsiglia:
+Giustizia = 8, Forza = 11, Il Matto = 22). Le immagini delle lame sono in
+`assets/arcani/` (`<slug>.webp` + `<slug>.jpg`) e compaiono nel tooltip al click
+su un numero.
 
 Apri `src/significati.js`. Ogni numero 1–22 ha:
 
 ```js
 11: {
-  nome: "L'Intuizione Superiore",
-  keyword: 'Visione · Illuminazione · Sensibilità',
+  nome: 'La Forza',
+  arcano: '11_la_forza',                 // slug immagine in assets/arcani/
+  keyword: 'Forza · Coraggio · Dolcezza',
   descrizione: '…',   // testo principale
   ombra: '…',         // aspetto ombra
   dono: '…',          // dono/talento
-  en: { nome: '…', keyword: '…' },  // override inglese (opzionale)
+  en: { nome: 'Strength', keyword: '…' },// override inglese (opzionale)
 }
 ```
 
-- Per **modificare** un significato: cambia `descrizione`, `ombra`, `dono`.
-- Per **tradurre** in inglese: completa l'oggetto `en` (se un campo manca, si
-  usa l'italiano come fallback).
-- Le **descrizioni dei campi** della mappa (cosa rappresenta ogni campo) sono in
-  `campiDescrizioni` / `campiEN` nello stesso file.
+- Per **modificare** un significato: cambia `descrizione`, `ombra`, `dono`
+  (i testi attuali sono PLACEHOLDER coerenti con l'archetipo, da validare).
+- Per **cambiare un'immagine**: sostituisci i file `assets/arcani/<slug>.webp|.jpg`
+  (mantieni proporzione ~400×788) o aggiorna `arcano`.
+- Per **tradurre** in inglese: completa l'oggetto `en` (fallback all'italiano).
+- Le **descrizioni dei campi** della mappa sono in `campiDescrizioni` / `campiEN`.
 
-I tooltip mostrano: descrizione del campo → significato del numero (nome,
-keyword, descrizione, ombra, dono).
+I tooltip mostrano: immagine dell'Arcano + numero/nome/keyword → descrizione del
+campo → descrizione dell'Arcano (descrizione, ombra, dono).
 
 ---
 

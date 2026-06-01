@@ -371,6 +371,7 @@ button.numero:hover { color: var(--accent); text-shadow: var(--glow); }
   position: absolute; z-index: 80; width: min(340px, calc(100vw - 32px));
   background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius);
   box-shadow: var(--shadow); padding: 1.3rem 1.3rem 1.1rem;
+  max-height: calc(100vh - 90px); overflow-y: auto;
   animation: tipIn 0.28s var(--ease);
 }
 @keyframes tipIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
@@ -378,8 +379,12 @@ button.numero:hover { color: var(--accent); text-shadow: var(--glow); }
 @keyframes sheetIn { from { transform: translateY(100%); } to { transform: translateY(0); } }
 .tooltip__close { position: absolute; top: 0.5rem; right: 0.6rem; background: none; border: none; color: var(--text-2); font-size: 1.6rem; line-height: 1; padding: 0.2rem 0.5rem; }
 .tooltip__close:hover { color: var(--accent); }
-.tooltip__head { display: flex; align-items: center; gap: 0.9rem; margin-bottom: 0.8rem; }
-.tooltip__numero { font-family: var(--font-num); font-size: 2.6rem; color: var(--accent); line-height: 1; }
+.tooltip__head { display: flex; align-items: flex-start; gap: 1rem; margin-bottom: 0.8rem; }
+.tooltip__arcano { flex-shrink: 0; display: block; }
+.tooltip__arcano img { display: block; width: 86px; height: auto; border-radius: 7px; border: 1px solid var(--border); box-shadow: var(--shadow-soft); background: var(--surface); }
+.tooltip--sheet .tooltip__arcano img { width: 110px; }
+.tooltip__headinfo { display: flex; flex-direction: column; gap: 0.25rem; padding-top: 0.2rem; }
+.tooltip__numero { font-family: var(--font-num); font-size: 2rem; color: var(--accent); line-height: 1; }
 .tooltip__nome { font-size: 1.3rem; color: var(--text); }
 .tooltip__keyword { font-size: 0.74rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent-2); }
 .tooltip__contesto { font-size: 0.86rem; color: var(--text-2); border-left: 2px solid var(--border); padding-left: 0.7rem; margin-bottom: 0.7rem; }

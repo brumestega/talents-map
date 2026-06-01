@@ -57,6 +57,14 @@ const LABEL_KEY = {
 
 const labelCampo = (campo) => (LABEL_KEY[campo] ? t(LABEL_KEY[campo]) : campo);
 
+/** Costruisce un <picture> per la lama dell'Arcano (webp + fallback jpg). */
+function arcanoPicture(slug, alt) {
+  const base = config.arcaniPath + slug;
+  return el('picture', { class: 'tooltip__arcano' },
+    el('source', { srcset: `${base}.webp`, type: 'image/webp' }),
+    el('img', { src: `${base}.jpg`, alt, loading: 'lazy', width: '400', height: '788' }));
+}
+
 /* ===========================================================================
  * NUMERO (elemento cliccabile con tooltip)
  * ======================================================================== */
@@ -444,8 +452,9 @@ function apriTooltip(trigger) {
   tip.append(
     el('button', { class: 'tooltip__close', type: 'button', 'aria-label': t('dialog.close'), onclick: chiudiTooltip }, '×'),
     el('div', { class: 'tooltip__head' },
-      el('span', { class: 'tooltip__numero' }, String(numero)),
-      el('div', {},
+      (config.showArcani && sig.arcano) ? arcanoPicture(sig.arcano, `Arcano ${numero}: ${sig.nome}`) : null,
+      el('div', { class: 'tooltip__headinfo' },
+        el('span', { class: 'tooltip__numero' }, String(numero)),
         el('h4', { class: 'tooltip__nome' }, sig.nome),
         el('p', { class: 'tooltip__keyword' }, sig.keyword))),
     campoDesc ? el('p', { class: 'tooltip__contesto' },
