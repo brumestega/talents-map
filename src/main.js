@@ -8,7 +8,7 @@ import { calcolaMappa, validaInput, verificaCalcoli } from './calculator.js';
 import { t, setLang, getCurrentLang, applicaTraduzioniDOM, onLangChange } from './i18n.js';
 import {
   mostraRisultati, rerenderSeVisibile, mostraForm, mostraLoader, apriStorico, chiudiStorico,
-  mostraDialogSalva, mostraBannerPrecedente,
+  mostraDialogSalva, mostraBannerPrecedente, aggiornaHeaderAuth,
 } from './ui.js';
 import {
   salvaMappa, caricaUltimaMappa, salvaTema, caricaTema, salvaLang, caricaLang, storageDisponibile,
@@ -48,6 +48,7 @@ function initLingua() {
   onLangChange(() => {
     aggiornaToggleLingua();
     popolaMesi();
+    aggiornaHeaderAuth(); // ritraduce "Accedi/Esci" e i badge
     rerenderSeVisibile(ultimaMappaCalcolata, handlersRisultati); // ritraduce le etichette dei risultati
   });
 }
@@ -172,17 +173,32 @@ function init() {
   // Submit del form
   const form = $('#mappa-form');
   if (form) {
+    const submitBtn = form.querySelector('button[type=submit]');
+    let formToccato = false; // diventa true dopo il primo tentativo di submit
+    // Disabilita il submit finché ci sono errori (solo dopo il primo tentativo,
+    // per non bloccare il pulsante a form ancora vuoto al primo caricamento).
+    const aggiornaSubmit = () => {
+      if (!formToccato || !submitBtn) return;
+      submitBtn.disabled = !validaForm();
+    };
+
     form.addEventListener('submit', (e) => {
       e.preventDefault();
       $('#form-error').hidden = true;
-      if (!validaForm()) return;
+      formToccato = true;
+      if (!validaForm()) { if (submitBtn) submitBtn.disabled = true; return; }
       eseguiCalcolo(leggiForm());
     });
-    // Float-label: marca i campi compilati e pulisce gli errori digitando
+
+    // Float-label (marca i campi compilati) + validazione live dopo il 1° tentativo
     form.querySelectorAll('input, select').forEach((campo) => {
       const sync = () => campo.closest('.field')?.classList.toggle('field--filled', !!campo.value);
-      campo.addEventListener('input', () => { sync(); mostraErroreCampo('#' + campo.id, ''); });
-      campo.addEventListener('change', sync);
+      campo.addEventListener('input', () => {
+        sync();
+        if (formToccato) aggiornaSubmit();
+        else mostraErroreCampo('#' + campo.id, '');
+      });
+      campo.addEventListener('change', () => { sync(); if (formToccato) aggiornaSubmit(); });
       sync();
     });
   }
@@ -201,6 +217,9 @@ function init() {
   }
   $('#storico-close')?.addEventListener('click', chiudiStorico);
   $('#storico-backdrop')?.addEventListener('click', chiudiStorico);
+
+  // Header autenticazione (pulsante Accedi / nome+badge+Esci)
+  aggiornaHeaderAuth();
 
   // Banner mappa precedente
   if (config.showStorico) {
