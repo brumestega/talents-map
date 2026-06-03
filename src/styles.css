@@ -323,10 +323,9 @@ button { font-family: inherit; cursor: pointer; }
 .mini-label { font-size: 0.64rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-2); }
 
 /* Numeri */
-.numero { font-family: var(--font-num); font-weight: 500; color: var(--text); line-height: 1; background: none; border: none; padding: 0.05em 0.15em; transition: color 0.2s, text-shadow 0.2s, transform 0.2s; font-variant-numeric: lining-nums; }
+.numero { font-family: var(--font-num); font-weight: 500; color: var(--text); line-height: 1; background: none; border: none; padding: 0.05em 0.15em; transition: color 0.2s, text-shadow 0.2s, transform 0.2s; font-variant-numeric: lining-nums; font-size: 2.6rem; }
 button.numero { cursor: pointer; }
 button.numero:hover { color: var(--accent); text-shadow: var(--glow); }
-.numero { font-size: 2.6rem; }
 .numero--sm { font-size: 1.7rem; }
 .numero--lg { font-size: 3.6rem; color: var(--accent); }
 .numero--hero { font-size: clamp(4.5rem, 16vw, 6.5rem); color: var(--accent); text-shadow: var(--glow); }
@@ -392,9 +391,12 @@ button.numero:hover { color: var(--accent); text-shadow: var(--glow); }
 .tooltip__keyword { font-size: 0.74rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent-2); }
 .tooltip__contesto { font-size: 0.86rem; color: var(--text-2); border-left: 2px solid var(--border); padding-left: 0.7rem; margin-bottom: 0.7rem; }
 .tooltip__contesto .mini-label { display: block; color: var(--accent); margin-bottom: 0.2rem; }
-.tooltip__desc { font-size: 0.92rem; margin-bottom: 0.6rem; }
-.tooltip__sub { font-size: 0.84rem; color: var(--text-2); margin-bottom: 0.4rem; }
-.tooltip__sub strong { color: var(--text); }
+.tooltip__desc { font-size: 0.92rem; margin-bottom: 0.6rem; white-space: pre-line; }
+.tooltip__fold { margin-top: 0.5rem; border-top: 1px solid var(--border-soft); padding-top: 0.5rem; }
+.tooltip__fold summary { cursor: pointer; font-size: 0.74rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
+.tooltip__fold summary::-webkit-details-marker { color: var(--accent); }
+.tooltip__fold[open] summary { margin-bottom: 0.4rem; }
+.tooltip__foldtext { font-size: 0.84rem; color: var(--text-2); white-space: pre-line; }
 
 /* --------------------------------------------------------------------- */
 /* DRAWER STORICO                                                        */

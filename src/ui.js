@@ -461,8 +461,8 @@ function apriTooltip(trigger) {
     campoDesc ? el('p', { class: 'tooltip__contesto' },
       el('span', { class: 'mini-label' }, `${t('tooltip.context')}: ${campoLabel}`), campoDesc) : null,
     sig.descrizione ? el('p', { class: 'tooltip__desc' }, sig.descrizione) : null,
-    sig.ombra ? el('p', { class: 'tooltip__sub' }, el('strong', {}, `${t('tooltip.shadow')}. `), sig.ombra) : null,
-    sig.dono ? el('p', { class: 'tooltip__sub' }, el('strong', {}, `${t('tooltip.gift')}. `), sig.dono) : null,
+    sig.ombra ? el('details', { class: 'tooltip__fold' }, el('summary', {}, t('tooltip.shadow')), el('p', { class: 'tooltip__foldtext' }, sig.ombra)) : null,
+    sig.dono ? el('details', { class: 'tooltip__fold' }, el('summary', {}, t('tooltip.gift')), el('p', { class: 'tooltip__foldtext' }, sig.dono)) : null,
   );
 
   tip.hidden = false;
