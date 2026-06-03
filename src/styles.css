@@ -307,7 +307,10 @@ button { font-family: inherit; cursor: pointer; }
 .grid--compact { grid-template-columns: repeat(2, 1fr); }
 
 /* Card numero */
-.num-card { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 0.5rem; padding: 1.4rem 1rem; background: var(--surface); border: 1px solid var(--border-soft); border-radius: var(--radius); box-shadow: var(--shadow-soft); }
+.num-card { position: relative; overflow: hidden; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 0.5rem; padding: 1.4rem 1rem; background: var(--surface); border: 1px solid var(--border-soft); border-radius: var(--radius); box-shadow: var(--shadow-soft); transition: transform 0.25s var(--ease), box-shadow 0.25s, border-color 0.25s; }
+.num-card::before { content: ''; position: absolute; inset: 0; background: radial-gradient(120% 70% at 50% -10%, rgba(200,169,110,0.08), transparent 60%); pointer-events: none; }
+.num-card > * { position: relative; }
+.num-card:hover { transform: translateY(-3px); box-shadow: var(--shadow); border-color: var(--border); }
 .num-card__label { font-size: 0.72rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-2); }
 .num-card__rule { width: 36px; height: 1px; background: var(--accent); opacity: 0.55; }
 .num-card__note { color: var(--text-2); font-size: 0.84rem; }
@@ -338,9 +341,9 @@ button.numero:hover { color: var(--accent); text-shadow: var(--glow); }
 .hero--equilibrio .numero { position: relative; }
 .hero__note { color: var(--text-2); font-style: italic; font-family: var(--font-display); font-size: 1.1rem; margin-top: 0.6rem; }
 .destino-sep { display: flex; align-items: center; justify-content: center; margin-bottom: 1rem; }
-.destino-sep::before, .destino-sep::after { content: ''; height: 1px; width: min(180px, 30vw); background: linear-gradient(90deg, transparent, var(--accent)); }
-.destino-sep::after { background: linear-gradient(90deg, var(--accent), transparent); }
-.destino-sep__ornament { color: var(--accent); padding: 0 1rem; font-size: 1rem; }
+.destino-sep__line { height: 1px; width: min(200px, 30vw); background: linear-gradient(90deg, transparent, var(--accent)); }
+.destino-sep__line:last-child { background: linear-gradient(90deg, var(--accent), transparent); }
+.destino-sep__ornament { color: var(--accent); padding: 0 1rem; font-size: 1rem; text-shadow: var(--glow); }
 
 /* Ambiti */
 .ambito-card { position: relative; padding: 1.4rem 1.2rem 1.2rem; background: var(--surface); border: 1px solid var(--border-soft); border-top: 2px solid var(--ambito-color); border-radius: var(--radius); box-shadow: var(--shadow-soft); transition: transform 0.25s var(--ease), box-shadow 0.25s, background 0.4s; will-change: transform; overflow: hidden; }
@@ -468,6 +471,22 @@ button.numero:hover { color: var(--accent); text-shadow: var(--glow); }
 .debug-grid code { color: var(--accent-2); }
 .debug-json { max-height: 320px; overflow: auto; font-size: 0.75rem; color: var(--text-2); background: var(--bg); padding: 0.8rem; border-radius: var(--radius-sm); }
 .error-box { padding: 2rem; text-align: center; color: var(--crimson); border: 1px solid color-mix(in oklab, var(--crimson) 40%, transparent); border-radius: var(--radius); }
+
+/* --------------------------------------------------------------------- */
+/* IMMAGINI ARCANI NEI RISULTATI (style v2)                              */
+/* --------------------------------------------------------------------- */
+.num-card--arcano { padding-top: 1.1rem; }
+.card-arcano { display: block; line-height: 0; margin-bottom: 0.25rem; }
+.card-arcano img { width: 62px; height: auto; border-radius: 6px; border: 1px solid var(--border); box-shadow: var(--shadow-soft); background: var(--surface-2); transition: transform 0.3s var(--ease); }
+.num-card--arcano:hover .card-arcano img { transform: translateY(-2px) scale(1.03); }
+.card-arcano__nome { font-family: var(--font-display); font-style: italic; font-size: 0.98rem; color: var(--accent); margin-top: 0.15rem; }
+
+.hero--destino { display: flex; flex-direction: column; align-items: center; }
+.destino-arcano { display: block; line-height: 0; margin: 0.5rem 0 0.3rem; }
+.destino-arcano img { width: clamp(118px, 26vw, 162px); height: auto; border-radius: 10px; border: 1px solid var(--accent); box-shadow: 0 0 55px -10px rgba(200,169,110,0.55), var(--shadow); background: var(--surface-2); }
+.hero--destino .numero--mega { font-size: clamp(4rem, 14vw, 6rem); margin-top: 0.2rem; }
+.destino-nome { font-family: var(--font-display); font-size: 1.5rem; color: var(--accent); margin-top: 0.3rem; }
+.destino-verbo { font-family: var(--font-num); font-variant: small-caps; letter-spacing: 0.06em; color: var(--text-2); font-size: 1.05rem; }
 
 /* --------------------------------------------------------------------- */
 /* RESPONSIVE                                                            */

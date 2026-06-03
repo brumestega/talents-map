@@ -59,9 +59,9 @@ const LABEL_KEY = {
 const labelCampo = (campo) => (LABEL_KEY[campo] ? t(LABEL_KEY[campo]) : campo);
 
 /** Costruisce un <picture> per la lama dell'Arcano (webp + fallback jpg). */
-function arcanoPicture(slug, alt) {
+function arcanoPicture(slug, alt, cls = 'tooltip__arcano') {
   const base = config.arcaniPath + slug;
-  return el('picture', { class: 'tooltip__arcano' },
+  return el('picture', { class: cls },
     el('source', { srcset: `${base}.webp`, type: 'image/webp' }),
     el('img', { src: `${base}.jpg`, alt, loading: 'lazy', width: '400', height: '788' }));
 }
@@ -101,10 +101,12 @@ function sezione(id, titolo, ...corpo) {
 }
 
 function cardNumero(campo, etichetta, valore, opts = {}) {
-  return el('div', { class: 'num-card' + (opts.cardClass ? ` ${opts.cardClass}` : ''), style: opts.color ? `--ambito-color:${opts.color}` : undefined },
+  const sig = opts.arcano ? getSignificato(valore, getCurrentLang()) : null;
+  return el('div', { class: 'num-card' + (opts.cardClass ? ` ${opts.cardClass}` : '') + (sig ? ' num-card--arcano' : ''), style: opts.color ? `--ambito-color:${opts.color}` : undefined },
+    sig && sig.arcano ? arcanoPicture(sig.arcano, sig.nome, 'card-arcano') : null,
     el('span', { class: 'num-card__label' }, etichetta),
     numeroEl(valore, { campo, etichetta, size: opts.size, color: opts.color }),
-    el('span', { class: 'num-card__rule' }));
+    sig ? el('span', { class: 'card-arcano__nome' }, sig.nome) : el('span', { class: 'num-card__rule' }));
 }
 
 /* SEZIONE 0 — intestazione personale */
@@ -123,11 +125,12 @@ function buildIntestazione(m) {
 
 /* SEZIONE 1 — tre numeri fondamentali */
 function buildBase(m) {
+  const arc = config.showArcani;
   return sezione('base', t('section.base'),
     el('div', { class: 'grid grid--3' },
-      cardNumero('desiderio', t('campo.desiderio'), m.base.desiderio, { size: 'lg' }),
-      cardNumero('risposta', t('campo.risposta'), m.base.risposta, { size: 'lg' }),
-      cardNumero('memoria', t('campo.memoria'), m.base.memoria, { size: 'lg' })));
+      cardNumero('desiderio', t('campo.desiderio'), m.base.desiderio, { size: 'lg', arcano: arc }),
+      cardNumero('risposta', t('campo.risposta'), m.base.risposta, { size: 'lg', arcano: arc }),
+      cardNumero('memoria', t('campo.memoria'), m.base.memoria, { size: 'lg', arcano: arc })));
 }
 
 /* SEZIONE 2 — conflitto base + personalità profonda */
@@ -257,11 +260,21 @@ function buildSuperSequenza(m) {
 
 /* SEZIONE 9 — numero destino */
 function buildNumeroDestino(m) {
+  const sig = getSignificato(m.numeroDestino, getCurrentLang());
+  const card = (config.showArcani && sig.arcano)
+    ? arcanoPicture(sig.arcano, `Arcano ${m.numeroDestino}: ${sig.nome}`, 'destino-arcano')
+    : null;
   return sezione('numero-destino', null,
-    el('div', { class: 'destino-sep', 'aria-hidden': 'true' }, el('span', { class: 'destino-sep__ornament' }, '✦')),
+    el('div', { class: 'destino-sep', 'aria-hidden': 'true' },
+      el('span', { class: 'destino-sep__line' }),
+      el('span', { class: 'destino-sep__ornament' }, '✦'),
+      el('span', { class: 'destino-sep__line' })),
     el('div', { class: 'hero hero--destino' },
       el('span', { class: 'hero__label' }, t('campo.numeroDestino')),
-      numeroEl(m.numeroDestino, { campo: 'numeroDestino', size: 'mega' })));
+      card,
+      numeroEl(m.numeroDestino, { campo: 'numeroDestino', size: 'mega' }),
+      el('p', { class: 'destino-nome' }, sig.nome,
+        sig.keyword ? el('span', { class: 'destino-verbo' }, ` · ${sig.keyword}`) : null)));
 }
 
 /* Footer risultati */
