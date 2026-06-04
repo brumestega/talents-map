@@ -489,6 +489,40 @@ button.numero:hover { color: var(--accent); text-shadow: var(--glow); }
 .destino-verbo { font-family: var(--font-num); font-variant: small-caps; letter-spacing: 0.06em; color: var(--text-2); font-size: 1.05rem; }
 
 /* --------------------------------------------------------------------- */
+/* TIPOGRAFIA & RITMO (style v2)                                         */
+/* --------------------------------------------------------------------- */
+.section-title { letter-spacing: 0.1em; font-weight: 500; }
+.section-title::after { width: 60px; background: linear-gradient(90deg, transparent, var(--accent), transparent); opacity: 0.85; margin-top: 0.85rem; }
+.num-card__label, .hero__label { letter-spacing: 0.2em; }
+.mini-label { letter-spacing: 0.16em; }
+.result-section { margin-bottom: clamp(2.8rem, 7vw, 4.2rem); }
+.map-header { margin-bottom: clamp(2.4rem, 7vw, 3.6rem); }
+.tooltip__desc, .tooltip__foldtext, .tooltip__contesto { line-height: 1.65; }
+.map-title { letter-spacing: 0.02em; }
+.intro__title { letter-spacing: 0.05em; }
+.intro__subtitle { letter-spacing: 0.05em; }
+
+/* --------------------------------------------------------------------- */
+/* SFONDO ATMOSFERICO (style v2): nebulose soffuse + vignetta            */
+/* (tutto come layer di background: resta dietro al contenuto)           */
+/* --------------------------------------------------------------------- */
+body {
+  background-image:
+    radial-gradient(135% 100% at 50% 38%, transparent 55%, rgba(0, 0, 0, 0.38) 100%),
+    radial-gradient(900px 620px at 13% 18%, rgba(123, 158, 217, 0.08), transparent 62%),
+    radial-gradient(820px 700px at 87% 80%, rgba(200, 169, 110, 0.07), transparent 60%),
+    radial-gradient(1200px 800px at 50% -10%, color-mix(in oklab, var(--accent-2) 14%, transparent), transparent 60%),
+    radial-gradient(1100px 900px at 50% 120%, var(--bg-2), var(--bg));
+}
+[data-theme='light'] body {
+  background-image:
+    radial-gradient(140% 100% at 50% 40%, transparent 62%, rgba(120, 100, 60, 0.10) 100%),
+    radial-gradient(900px 620px at 13% 18%, rgba(79, 109, 163, 0.06), transparent 62%),
+    radial-gradient(820px 700px at 87% 80%, rgba(166, 130, 74, 0.07), transparent 60%),
+    radial-gradient(1100px 900px at 50% 120%, var(--bg-2), var(--bg));
+}
+
+/* --------------------------------------------------------------------- */
 /* RESPONSIVE                                                            */
 /* --------------------------------------------------------------------- */
 @media (min-width: 600px) {

@@ -201,13 +201,14 @@ function buildAmbiti(m) {
 /* SEZIONE 5 — elementi chiave */
 function buildElementiChiave(m) {
   const e = m.elementiChiave;
+  const arc = config.showArcani;
   return sezione('elementi-chiave', t('section.elementiChiave'),
     el('div', { class: 'grid grid--3 grid--keys' },
-      cardNumero('prontoSoccorso', t('campo.prontoSoccorso'), e.prontoSoccorso),
-      cardNumero('chiaveEmozionale', t('campo.chiaveEmozionale'), e.chiaveEmozionale),
-      cardNumero('strumentoLavoroPotere', t('campo.strumento'), e.strumentoLavoroPotere),
-      cardNumero('progettoSenso', t('campo.progetto'), e.progettoSenso),
-      cardNumero('personaggio', t('campo.personaggio'), e.personaggio)));
+      cardNumero('prontoSoccorso', t('campo.prontoSoccorso'), e.prontoSoccorso, { arcano: arc }),
+      cardNumero('chiaveEmozionale', t('campo.chiaveEmozionale'), e.chiaveEmozionale, { arcano: arc }),
+      cardNumero('strumentoLavoroPotere', t('campo.strumento'), e.strumentoLavoroPotere, { arcano: arc }),
+      cardNumero('progettoSenso', t('campo.progetto'), e.progettoSenso, { arcano: arc }),
+      cardNumero('personaggio', t('campo.personaggio'), e.personaggio, { arcano: arc })));
 }
 
 /* SEZIONE 6 — PP anno scelto */
