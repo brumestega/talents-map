@@ -106,7 +106,11 @@ function cardNumero(campo, etichetta, valore, opts = {}) {
     sig && sig.arcano ? arcanoPicture(sig.arcano, sig.nome, 'card-arcano') : null,
     el('span', { class: 'num-card__label' }, etichetta),
     numeroEl(valore, { campo, etichetta, size: opts.size, color: opts.color }),
-    sig ? el('span', { class: 'card-arcano__nome' }, sig.nome) : el('span', { class: 'num-card__rule' }));
+    sig
+      ? el('div', { class: 'card-arcano__meta' },
+          el('span', { class: 'card-arcano__nome' }, sig.nome),
+          sig.keyword ? el('span', { class: 'card-arcano__verbo' }, sig.keyword) : null)
+      : el('span', { class: 'num-card__rule' }));
 }
 
 /* SEZIONE 0 — intestazione personale */
@@ -477,6 +481,7 @@ function apriTooltip(trigger) {
     sig.descrizione ? el('p', { class: 'tooltip__desc' }, sig.descrizione) : null,
     sig.ombra ? el('details', { class: 'tooltip__fold' }, el('summary', {}, t('tooltip.shadow')), el('p', { class: 'tooltip__foldtext' }, sig.ombra)) : null,
     sig.dono ? el('details', { class: 'tooltip__fold' }, el('summary', {}, t('tooltip.gift')), el('p', { class: 'tooltip__foldtext' }, sig.dono)) : null,
+    (sig.domande && sig.domande.length) ? el('details', { class: 'tooltip__fold' }, el('summary', {}, t('tooltip.questions')), el('ul', { class: 'tooltip__domande' }, ...sig.domande.map((q) => el('li', {}, q)))) : null,
   );
 
   tip.hidden = false;

@@ -400,6 +400,9 @@ button.numero:hover { color: var(--accent); text-shadow: var(--glow); }
 .tooltip__fold summary::-webkit-details-marker { color: var(--accent); }
 .tooltip__fold[open] summary { margin-bottom: 0.4rem; }
 .tooltip__foldtext { font-size: 0.84rem; color: var(--text-2); white-space: pre-line; }
+.tooltip__domande { margin: 0.35rem 0 0; padding-left: 1.1rem; font-size: 0.84rem; color: var(--text-2); line-height: 1.55; }
+.tooltip__domande li { margin-bottom: 0.25rem; }
+.tooltip__domande li::marker { color: var(--accent); }
 
 /* --------------------------------------------------------------------- */
 /* DRAWER STORICO                                                        */
@@ -479,7 +482,9 @@ button.numero:hover { color: var(--accent); text-shadow: var(--glow); }
 .card-arcano { display: block; line-height: 0; margin-bottom: 0.25rem; }
 .card-arcano img { width: 62px; height: auto; border-radius: 6px; border: 1px solid var(--border); box-shadow: var(--shadow-soft); background: var(--surface-2); transition: transform 0.3s var(--ease); }
 .num-card--arcano:hover .card-arcano img { transform: translateY(-2px) scale(1.03); }
-.card-arcano__nome { font-family: var(--font-display); font-style: italic; font-size: 0.98rem; color: var(--accent); margin-top: 0.15rem; }
+.card-arcano__meta { display: flex; flex-direction: column; align-items: center; gap: 0.05rem; margin-top: 0.15rem; }
+.card-arcano__nome { font-family: var(--font-display); font-style: italic; font-size: 0.98rem; color: var(--accent); }
+.card-arcano__verbo { font-family: var(--font-num); font-variant: small-caps; letter-spacing: 0.06em; font-size: 0.82rem; color: var(--text-2); }
 
 .hero--destino { display: flex; flex-direction: column; align-items: center; }
 .destino-arcano { display: block; line-height: 0; margin: 0.5rem 0 0.3rem; }

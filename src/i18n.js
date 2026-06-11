@@ -98,6 +98,7 @@ const translations = {
     'tooltip.context': 'In questo campo',
     'tooltip.shadow': 'Ombra',
     'tooltip.gift': 'Dono',
+    'tooltip.questions': 'Domande da porsi',
 
     'error.generic': 'Qualcosa è andato storto durante il calcolo. Controlla i dati e riprova.',
     'error.render': 'Si è verificato un problema nel mostrare questa sezione.',
@@ -214,6 +215,7 @@ const translations = {
     'tooltip.context': 'In this field',
     'tooltip.shadow': 'Shadow',
     'tooltip.gift': 'Gift',
+    'tooltip.questions': 'Questions to ask',
 
     'error.generic': 'Something went wrong during the calculation. Check your data and try again.',
     'error.render': 'There was a problem displaying this section.',
