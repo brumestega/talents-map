@@ -159,12 +159,12 @@ export function generaRelazione(mappa, lang = 'it') {
       const ambNome = L.amb[key];
       return it ? [
         H(ambNome),
-        P(`Nel tuo ${ambNome.toLowerCase()} il conflitto si manifesta attraverso il numero ${nm(seq.b)}. ${campo(key)}`),
+        P(`Nell’ambito ${ambNome} il conflitto si manifesta attraverso il numero ${nm(seq.b)}. ${campo(key)}`),
         P(S(seq.b).descrizione),
         P(`Questo nodo genera una risposta emotiva, il numero ${nm(seq.a)}, che a sua volta trova una via di trasformazione nel numero ${nm(seq.c)}. Quando attraversi consapevolmente questo percorso ne emerge una sfumatura: il numero ${nm(seq.sfumatura)}, il dono che questo ambito ha da offrirti quando non lo eviti.`),
       ] : [
         H(ambNome),
-        P(`In your ${ambNome.toLowerCase()} the conflict shows itself through number ${nm(seq.b)}. ${campo(key)}`),
+        P(`In the ${ambNome} domain the conflict shows itself through number ${nm(seq.b)}. ${campo(key)}`),
         P(S(seq.b).descrizione),
         P(`This knot generates an emotional response, number ${nm(seq.a)}, which in turn finds a path of transformation in number ${nm(seq.c)}. When you walk this path consciously, a nuance emerges: number ${nm(seq.sfumatura)}, the gift this domain has to offer you when you stop avoiding it.`),
       ];
