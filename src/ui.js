@@ -738,3 +738,256 @@ export function aggiornaHeaderAuth() {
     el('button', { class: 'btn-auth-link', type: 'button', onclick: () => { logout(); aggiornaHeaderAuth(); } }, t('auth.logout')),
   );
 }
+
+/* ===========================================================================
+ * EXPORT PDF — mappa completa (jsPDF "puro": testo + immagini)
+ * Usa significati.js + campiDescrizioni come fonte. jsPDF è vendorizzato in
+ * vendor/jspdf.umd.min.js (window.jspdf.jsPDF). Nessun server/CDN a runtime.
+ * ======================================================================== */
+
+const PDF = {
+  oro: [139, 105, 20], oroChiaro: [184, 144, 30], testo: [42, 31, 14],
+  muto: [110, 82, 51], linea: [223, 196, 138], bg: [251, 248, 242],
+};
+const AMBITO_RGB = { nido: [139, 105, 20], relazione: [45, 90, 122], sociale: [58, 107, 85], lavoro: [122, 53, 53] };
+
+/** Normalizza i caratteri tipografici in ASCII (i font standard jsPDF non li rendono). */
+function pdfText(s) {
+  return String(s == null ? '' : s)
+    .replace(/[‘’‚′]/g, "'")
+    .replace(/[“”„″«»]/g, '"')
+    .replace(/[–—]/g, '-')
+    .replace(/…/g, '...')
+    .replace(/[ ]/g, ' ')
+    .replace(/[·•]/g, '-');
+}
+
+/** Carica un'immagine arcano come dataURL JPEG (per addImage). */
+function caricaImgArcano(slug) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      try {
+        const c = document.createElement('canvas');
+        c.width = img.naturalWidth; c.height = img.naturalHeight;
+        c.getContext('2d').drawImage(img, 0, 0);
+        resolve(c.toDataURL('image/jpeg', 0.9));
+      } catch (_) { resolve(null); }
+    };
+    img.onerror = () => resolve(null);
+    img.src = config.arcaniPath + slug + '.jpg';
+  });
+}
+
+function mostraLoaderPDF() {
+  if (document.getElementById('pdf-loader')) return;
+  document.body.append(el('div', { id: 'pdf-loader', class: 'pdf-loader', role: 'status' },
+    el('div', { class: 'pdf-loader__ring', 'aria-hidden': 'true' }),
+    el('p', { class: 'pdf-loader__text' }, t('pdf.loading'))));
+}
+function nascondiLoaderPDF() { const l = document.getElementById('pdf-loader'); if (l) l.remove(); }
+function mostraErrorePDF(msg) {
+  const to = el('div', { class: 'pdf-toast', role: 'alert' }, msg || t('pdf.error'));
+  document.body.append(to);
+  setTimeout(() => to.remove(), 4500);
+}
+
+const slugNome = (n) => (String(n || 'mappa').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'mappa');
+
+/**
+ * Genera e scarica il PDF completo della mappa (tutte le sezioni, sempre).
+ * @param {object} mappa
+ */
+export async function generaPDF(mappa) {
+  const JsPDF = window.jspdf && window.jspdf.jsPDF;
+  if (!JsPDF) { mostraErrorePDF(t('pdf.error')); console.error('[pdf] jsPDF non disponibile (vendor/jspdf.umd.min.js non caricato)'); return; }
+  if (!mappa) return;
+  mostraLoaderPDF();
+  track('pdf_generato', { destino: mappa.numeroDestino });
+  try {
+    const lang = getCurrentLang();
+    // Precarica le immagini delle lame usate (6 numeri + PP + PP scelto)
+    const slugUsati = new Set();
+    [mappa.base.desiderio, mappa.base.risposta, mappa.base.memoria, mappa.conflittoBase, mappa.equilibrio, mappa.numeroDestino,
+      mappa.personalitaProfonda.risultato, mappa.ppAnnoScelto.risultato]
+      .forEach((v) => { const a = getSignificato(v, lang).arcano; if (a) slugUsati.add(a); });
+    const imgMap = {};
+    await Promise.all([...slugUsati].map(async (s) => { imgMap[s] = await caricaImgArcano(s); }));
+
+    const doc = new JsPDF({ unit: 'pt', format: 'a4' });
+    const PW = doc.internal.pageSize.getWidth();
+    const PHt = doc.internal.pageSize.getHeight();
+    const M = 50, CW = PW - 2 * M;
+    let y = M;
+
+    const setText = (c) => doc.setTextColor(c[0], c[1], c[2]);
+    const setFill = (c) => doc.setFillColor(c[0], c[1], c[2]);
+    const pageBg = () => { setFill(PDF.bg); doc.rect(0, 0, PW, PHt, 'F'); };
+    const nuovaPagina = () => { doc.addPage(); pageBg(); y = M; };
+    const ensure = (h) => { if (y + h > PHt - M) nuovaPagina(); };
+
+    function para(txt, opt = {}) {
+      const size = opt.size || 10.5, lh = size * 1.5, width = opt.width || CW, x = opt.x != null ? opt.x : M;
+      doc.setFont(opt.font || 'helvetica', opt.style || 'normal'); doc.setFontSize(size); setText(opt.color || PDF.testo);
+      doc.splitTextToSize(pdfText(txt), width).forEach((ln) => { ensure(lh); doc.text(ln, x, y); y += lh; });
+      y += (opt.gap == null ? 5 : opt.gap);
+    }
+    function paraBlocco(txt, opt = {}) { String(txt || '').split(/\n{2,}/).forEach((p) => { if (p.trim()) para(p.trim(), opt); }); }
+    function lista(titolo, righe, opt = {}) {
+      if (titolo) { doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5); setText(PDF.muto); ensure(16); doc.text(pdfText(titolo).toUpperCase(), M, y); y += 13; }
+      (Array.isArray(righe) ? righe : String(righe).split('\n')).forEach((r) => { if (r && r.trim()) para('•  ' + r.trim(), { size: opt.size || 10, color: opt.color || PDF.muto, gap: 1 }); });
+      y += 5;
+    }
+    function divisore(g = 14) { ensure(g + 6); setFill(PDF.linea); doc.rect(M, y, CW, 0.8, 'F'); y += g; }
+    function titoloSezione(txt) {
+      nuovaPagina();
+      doc.setFont('times', 'normal'); doc.setFontSize(22); setText(PDF.oro);
+      doc.text(pdfText(txt).toUpperCase(), PW / 2, y + 16, { align: 'center' }); y += 26;
+      setFill(PDF.linea); doc.rect(PW / 2 - 32, y, 64, 1, 'F'); y += 26;
+    }
+    const etichettaNumero = (valore, label) => {
+      doc.setFont('times', 'normal'); doc.setFontSize(26); setText(PDF.oro);
+      doc.text(String(valore), M, y + 20);
+      const nx = M + doc.getTextWidth(String(valore)) + 12;
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(10.5); setText(PDF.muto);
+      doc.text(pdfText(label).toUpperCase(), nx, y + 16, { maxWidth: CW - 60 });
+      y += 34;
+    };
+
+    /* --- 1. COPERTINA --- */
+    pageBg();
+    y = PHt / 2 - 150;
+    doc.setFont('times', 'normal'); doc.setFontSize(13); setText(PDF.oroChiaro);
+    doc.text('◆', PW / 2, y, { align: 'center' }); y += 44;
+    doc.setFontSize(34); setText(PDF.oro);
+    doc.text('MAPPA DEI TALENTI', PW / 2, y, { align: 'center' }); y += 34;
+    doc.setFont('times', 'italic'); doc.setFontSize(20); setText(PDF.muto);
+    doc.text(pdfText(`${t('pdf.of')} ${mappa.input.nome || ''}`), PW / 2, y, { align: 'center' }); y += 40;
+    setFill(PDF.linea); doc.rect(PW / 2 - 90, y, 180, 1, 'F'); y += 34;
+    const mesi = t('mesi');
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(12); setText(PDF.testo);
+    doc.text(pdfText(`${t('results.bornOn')} ${mappa.input.giorno} ${mesi[mappa.input.mese - 1]} ${mappa.input.anno}`), PW / 2, y, { align: 'center' }); y += 20;
+    doc.text(pdfText(`${t('results.refYear')}: ${mappa.input.annoScelto}`), PW / 2, y, { align: 'center' }); y += 40;
+    doc.setFont('times', 'italic'); doc.setFontSize(10); setText(PDF.muto);
+    doc.text(pdfText(`${t('pdf.generated')} ${new Date().toLocaleDateString(lang)}`), PW / 2, y, { align: 'center' });
+
+    /* --- 2. I SEI NUMERI FONDAMENTALI --- */
+    titoloSezione(t('pdf.sixNumbers'));
+    const numeri = [
+      ['desiderio', t('campo.desiderio'), mappa.base.desiderio],
+      ['risposta', t('campo.risposta'), mappa.base.risposta],
+      ['memoria', t('campo.memoria'), mappa.base.memoria],
+      ['conflittoBase', t('campo.conflittoBase'), mappa.conflittoBase],
+      ['equilibrio', t('campo.equilibrio'), mappa.equilibrio],
+      ['numeroDestino', t('campo.numeroDestino'), mappa.numeroDestino],
+    ];
+    for (const [campo, label, valore] of numeri) {
+      const sig = getSignificato(valore, lang);
+      const imgW = 70, imgH = Math.round(imgW * 788 / 400);
+      ensure(imgH + 30);
+      const top = y;
+      if (imgMap[sig.arcano]) doc.addImage(imgMap[sig.arcano], 'JPEG', PW - M - imgW, top, imgW, imgH);
+      etichettaNumero(valore, label);
+      doc.setFont('times', 'italic'); doc.setFontSize(13); setText(PDF.testo);
+      doc.text(pdfText(sig.nome + (sig.keyword ? '  -  ' + sig.keyword : '')), M, y, { maxWidth: CW - imgW - 20 }); y += 18;
+      if (y < top + imgH + 8) y = top + imgH + 8;
+      para(getCampoDescrizione(campo, lang), { style: 'italic', color: PDF.muto });
+      paraBlocco(sig.descrizione);
+      if (sig.domande && sig.domande.length) lista(t('tooltip.questions'), sig.domande);
+      divisore();
+    }
+
+    /* --- 3. I QUATTRO AMBITI --- */
+    titoloSezione(t('section.ambiti'));
+    for (const key of ['nido', 'relazione', 'sociale', 'lavoro']) {
+      const seq = mappa.ambiti[key];
+      ensure(80);
+      doc.setFont('times', 'normal'); doc.setFontSize(16); setText(AMBITO_RGB[key]);
+      doc.text(pdfText(t('ambito.' + key)).toUpperCase(), M, y + 4); y += 20;
+      para(getCampoDescrizione(key, lang), { style: 'italic', color: PDF.muto });
+      [['seq.b', seq.b], ['seq.a', seq.a], ['seq.c', seq.c], ['seq.sfumatura', seq.sfumatura]].forEach(([k, val]) => {
+        const s = getSignificato(val, lang);
+        para(`${t(k)}: ${val} - ${s.nome}${s.keyword ? ' (' + s.keyword + ')' : ''}`, { x: M + 10, size: 10, color: PDF.testo, gap: 2 });
+      });
+      divisore();
+    }
+
+    /* --- 4. PERSONALITÀ PROFONDA (+ anno scelto) --- */
+    titoloSezione(t('campo.pp'));
+    para(getCampoDescrizione('pp', lang), { style: 'italic', color: PDF.muto });
+    const bloccoPP = (ppObj, titolo) => {
+      const sig = getSignificato(ppObj.risultato, lang);
+      ensure(50);
+      if (titolo) { doc.setFont('times', 'normal'); doc.setFontSize(15); setText(PDF.oro); doc.text(pdfText(titolo), M, y); y += 20; }
+      para(`${t('campo.verticale')} ${ppObj.verticale}   ·   ${t('campo.orizzontale')} ${ppObj.orizzontale}   ·   ${ppObj.risultato} ${sig.nome}${sig.keyword ? ' (' + sig.keyword + ')' : ''}`, { font: 'helvetica', style: 'bold', size: 10.5, color: PDF.testo });
+      paraBlocco(sig.descrizione);
+      if (sig.ombra) lista(t('tooltip.shadow'), sig.ombra);
+      if (sig.dono) lista(t('tooltip.gift'), sig.dono);
+    };
+    bloccoPP(mappa.personalitaProfonda, null);
+    divisore(18);
+    bloccoPP(mappa.ppAnnoScelto, `${t('campo.ppAnnoScelto')} — ${mappa.input.annoScelto}`);
+
+    /* --- 5. ELEMENTI CHIAVE --- */
+    titoloSezione(t('section.elementiChiave'));
+    const elementi = [
+      ['prontoSoccorso', t('campo.prontoSoccorso'), mappa.elementiChiave.prontoSoccorso],
+      ['chiaveEmozionale', t('campo.chiaveEmozionale'), mappa.elementiChiave.chiaveEmozionale],
+      ['strumentoLavoroPotere', t('campo.strumento'), mappa.elementiChiave.strumentoLavoroPotere],
+      ['progettoSenso', t('campo.progetto'), mappa.elementiChiave.progettoSenso],
+      ['personaggio', t('campo.personaggio'), mappa.elementiChiave.personaggio],
+    ];
+    for (const [campo, label, valore] of elementi) {
+      const sig = getSignificato(valore, lang);
+      ensure(60);
+      etichettaNumero(valore, `${label} — ${sig.nome}`);
+      para(getCampoDescrizione(campo, lang), { style: 'italic', color: PDF.muto });
+      paraBlocco(sig.descrizione);
+      divisore();
+    }
+
+    /* --- 6. GIUSTIFICAZIONI --- */
+    titoloSezione(t('section.giustificazioni'));
+    para(t('pdf.giustIntro'), { color: PDF.muto });
+    y += 4;
+    [['nido', t('ambito.nido'), mappa.giustificazioni.nido],
+      ['relazione', t('ambito.relazione'), mappa.giustificazioni.relazione],
+      ['sociale', t('ambito.sociale'), mappa.giustificazioni.sociale],
+      ['lavoro', t('ambito.lavoro'), mappa.giustificazioni.lavoro],
+      ['equilibrio', t('campo.equilibrio'), mappa.giustificazioni.equilibrio],
+      ['prontoSoccorso', t('campo.prontoSoccorso'), mappa.giustificazioni.prontoSoccorso]].forEach(([campo, label, valore]) => {
+      const sig = getSignificato(valore, lang);
+      ensure(40);
+      etichettaNumero(valore, `${label} — ${sig.nome}`);
+      para(getCampoDescrizione(campo, lang), { style: 'italic', color: PDF.muto, gap: 8 });
+    });
+
+    /* --- 7. SUPER SEQUENZA --- */
+    titoloSezione(t('section.superSequenza'));
+    para(getCampoDescrizione('superSequenza', lang), { style: 'italic', color: PDF.muto });
+    y += 6;
+    const ss = mappa.superSequenza;
+    [['seq.b', ss.b], ['seq.a', ss.a], ['seq.c', ss.c], ['seq.sfumatura', ss.sfumatura]].forEach(([k, val]) => {
+      const s = getSignificato(val, lang);
+      para(`${t(k)}: ${val} - ${s.nome}${s.keyword ? ' (' + s.keyword + ')' : ''}`, { x: M + 10, size: 11, color: PDF.testo, gap: 3 });
+    });
+
+    /* --- 8. CHIUSURA --- */
+    nuovaPagina();
+    y = PHt / 2 - 80;
+    doc.setFont('times', 'normal'); doc.setFontSize(13); setText(PDF.oroChiaro);
+    doc.text('◆', PW / 2, y, { align: 'center' }); y += 40;
+    doc.setFont('times', 'italic'); doc.setFontSize(15); setText(PDF.muto);
+    doc.splitTextToSize(pdfText(t('pdf.closing')), CW - 80).forEach((ln) => { doc.text(ln, PW / 2, y, { align: 'center' }); y += 24; });
+    y += 24; setFill(PDF.linea); doc.rect(PW / 2 - 70, y, 140, 1, 'F'); y += 28;
+    doc.setFont('times', 'normal'); doc.setFontSize(12); setText(PDF.oro);
+    doc.text('Mappa dei Talenti', PW / 2, y, { align: 'center' });
+
+    doc.save(`mappa-talenti-${slugNome(mappa.input.nome)}.pdf`);
+  } catch (err) {
+    console.error('[pdf] errore generazione:', err);
+    mostraErrorePDF(t('pdf.error'));
+  } finally {
+    nascondiLoaderPDF();
+  }
+}

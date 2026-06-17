@@ -8,7 +8,7 @@ import { calcolaMappa, validaInput, verificaCalcoli } from './calculator.js';
 import { t, setLang, getCurrentLang, applicaTraduzioniDOM, onLangChange } from './i18n.js';
 import {
   mostraRisultati, rerenderSeVisibile, mostraForm, mostraLoader, apriStorico, chiudiStorico,
-  mostraDialogSalva, mostraBannerPrecedente, aggiornaHeaderAuth,
+  mostraDialogSalva, mostraBannerPrecedente, aggiornaHeaderAuth, generaPDF,
 } from './ui.js';
 import {
   salvaMappa, caricaUltimaMappa, salvaTema, caricaTema, salvaLang, caricaLang, storageDisponibile,
@@ -116,7 +116,7 @@ const handlersRisultati = {
     track('mappa_salvata', { id });
     if (!config.showPdfExport) return;
     mostraDialogSalva({
-      onStampa: () => { setTimeout(() => window.print(), 60); },
+      onStampa: () => generaPDF(ultimaMappaCalcolata),
       onSoloSalva: () => {},
     });
   },

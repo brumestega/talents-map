@@ -123,6 +123,13 @@ const translations = {
     'auth.err.nome': 'Inserisci il tuo nome.',
 
     'mesi': ['Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno', 'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'],
+    'pdf.loading': 'Sto componendo la tua mappa completa…',
+    'pdf.error': 'Non è stato possibile generare il PDF. Riprova.',
+    'pdf.of': 'di',
+    'pdf.generated': 'Documento generato il',
+    'pdf.sixNumbers': 'I Sei Numeri Fondamentali',
+    'pdf.giustIntro': 'Le Giustificazioni mostrano le tensioni di fondo tra le forze della mappa: non sono ostacoli, ma le radici da cui nasce il movimento di crescita in ciascun ambito.',
+    'pdf.closing': 'Questa mappa è un punto di partenza, non una destinazione. I numeri che hai incontrato non ti definiscono: ti indicano una direzione possibile.',
   },
 
   en: {
@@ -240,6 +247,13 @@ const translations = {
     'auth.err.nome': 'Please enter your name.',
 
     'mesi': ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+    'pdf.loading': 'Composing your complete map…',
+    'pdf.error': 'Could not generate the PDF. Please try again.',
+    'pdf.of': 'of',
+    'pdf.generated': 'Document generated on',
+    'pdf.sixNumbers': 'The Six Core Numbers',
+    'pdf.giustIntro': 'The Justifications reveal the underlying tensions between the forces of the map: not obstacles, but the roots from which growth arises in each domain.',
+    'pdf.closing': 'This map is a starting point, not a destination. The numbers you have met do not define you: they point to a possible direction.',
   },
 };
 

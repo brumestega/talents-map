@@ -528,6 +528,14 @@ body {
 }
 
 /* --------------------------------------------------------------------- */
+/* EXPORT PDF: loader + toast errore                                     */
+/* --------------------------------------------------------------------- */
+.pdf-loader { position: fixed; inset: 0; z-index: 600; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; background: color-mix(in oklab, var(--bg) 88%, transparent); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+.pdf-loader__ring { width: 48px; height: 48px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 1.2s linear infinite; }
+.pdf-loader__text { font-family: var(--font-display); font-style: italic; color: var(--accent); font-size: 1.15rem; }
+.pdf-toast { position: fixed; left: 50%; bottom: calc(24px + var(--safe-bottom)); transform: translateX(-50%); z-index: 620; max-width: 90vw; background: var(--surface); color: var(--crimson); border: 1px solid color-mix(in oklab, var(--crimson) 40%, transparent); border-radius: var(--radius-sm); padding: 0.8rem 1.2rem; font-size: 0.88rem; box-shadow: var(--shadow); animation: fadeIn 0.25s var(--ease); }
+
+/* --------------------------------------------------------------------- */
 /* RESPONSIVE                                                            */
 /* --------------------------------------------------------------------- */
 @media (min-width: 600px) {

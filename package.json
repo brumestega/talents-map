@@ -19,5 +19,8 @@
   "license": "UNLICENSED",
   "engines": {
     "node": ">=18"
+  },
+  "dependencies": {
+    "jspdf": "^2.5.2"
   }
 }
