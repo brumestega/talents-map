@@ -883,10 +883,15 @@ function caricaImgArcano(slug) {
     const img = new Image();
     img.onload = () => {
       try {
+        // Le lame sono stampate in piccolo: ridimensiono per un PDF più leggero.
+        const maxW = 300;
+        const scale = Math.min(1, maxW / (img.naturalWidth || maxW));
+        const w = Math.max(1, Math.round((img.naturalWidth || maxW) * scale));
+        const h = Math.max(1, Math.round((img.naturalHeight || maxW * 788 / 400) * scale));
         const c = document.createElement('canvas');
-        c.width = img.naturalWidth; c.height = img.naturalHeight;
-        c.getContext('2d').drawImage(img, 0, 0);
-        resolve(c.toDataURL('image/jpeg', 0.9));
+        c.width = w; c.height = h;
+        c.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve(c.toDataURL('image/jpeg', 0.82));
       } catch (_) { resolve(null); }
     };
     img.onerror = () => resolve(null);
@@ -931,7 +936,7 @@ export async function generaPDF(mappa) {
     const doc = new JsPDF({ unit: 'pt', format: 'a4' });
     const PW = doc.internal.pageSize.getWidth();
     const PHt = doc.internal.pageSize.getHeight();
-    const M = 50, CW = PW - 2 * M;
+    const M = 54, CW = PW - 2 * M;
     let y = M;
 
     const setText = (c) => doc.setTextColor(c[0], c[1], c[2]);
@@ -941,72 +946,86 @@ export async function generaPDF(mappa) {
     const ensure = (h) => { if (y + h > PHt - M) nuovaPagina(); };
 
     function para(txt, opt = {}) {
-      const size = opt.size || 10.5, lh = size * 1.5, width = opt.width || CW, x = opt.x != null ? opt.x : M;
+      const size = opt.size || 10.5, lh = size * (opt.lh || 1.5), width = opt.width || CW, x = opt.x != null ? opt.x : M;
       doc.setFont(opt.font || 'helvetica', opt.style || 'normal'); doc.setFontSize(size); setText(opt.color || PDF.testo);
-      doc.splitTextToSize(pdfText(txt), width).forEach((ln) => { ensure(lh); doc.text(ln, x, y); y += lh; });
+      const lines = doc.splitTextToSize(pdfText(txt), width);
+      lines.forEach((ln, i) => {
+        ensure(lh);
+        // Giustificazione del testo (salvo l'ultima riga e le righe di una sola parola).
+        if (opt.justify && i < lines.length - 1 && ln.trim().indexOf(' ') > 0) doc.text(ln, x, y, { align: 'justify', maxWidth: width });
+        else doc.text(ln, x, y);
+        y += lh;
+      });
       y += (opt.gap == null ? 5 : opt.gap);
     }
     function paraBlocco(txt, opt = {}) { String(txt || '').split(/\n{2,}/).forEach((p) => { if (p.trim()) para(p.trim(), opt); }); }
     function titoloCapitolo(numero, titolo) {
       nuovaPagina();
-      doc.setFont('helvetica', 'bold'); doc.setFontSize(10); setText(PDF.oroChiaro);
-      doc.text(pdfText(`${t('pdf.chapter')} ${numero}`).toUpperCase(), PW / 2, y + 8, { align: 'center' }); y += 26;
-      doc.setFont('times', 'normal'); doc.setFontSize(22); setText(PDF.oro);
-      doc.text(pdfText(titolo), PW / 2, y + 8, { align: 'center' }); y += 24;
-      setFill(PDF.linea); doc.rect(PW / 2 - 32, y, 64, 1, 'F'); y += 26;
+      y += 20;
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5); setText(PDF.oroChiaro);
+      doc.text(pdfText(`${t('pdf.chapter')} ${numero}`).toUpperCase(), PW / 2, y, { align: 'center', charSpace: 3 }); y += 26;
+      doc.setFont('times', 'normal'); doc.setFontSize(24); setText(PDF.oro);
+      doc.text(pdfText(titolo), PW / 2, y, { align: 'center' }); y += 14;
+      setFill(PDF.linea); doc.rect(PW / 2 - 34, y, 68, 0.8, 'F'); y += 30;
     }
     function sottoTitolo(txt) {
-      ensure(40); y += 10;
-      doc.setFont('times', 'normal'); doc.setFontSize(15); setText(PDF.oro);
-      doc.text(pdfText(txt), M, y); y += 8;
-      setFill(PDF.linea); doc.rect(M, y, 40, 0.8, 'F'); y += 14;
+      ensure(46); y += 14;
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(10.5); setText(PDF.oro);
+      doc.text(pdfText(txt).toUpperCase(), M, y, { charSpace: 2 }); y += 9;
+      setFill(PDF.linea); doc.rect(M, y, CW, 0.5, 'F'); y += 16;
     }
     const renderBlocchi = (blocchi, opt = {}) => blocchi.forEach((bl) => { if (bl.h3) sottoTitolo(bl.h3); else paraBlocco(bl.p, opt); });
-    // Striscia di lame in miniatura (gli arcani del capitolo) con didascalia numero + nome.
+    // Striscia di lame in miniatura (gli arcani del capitolo), incorniciate, con didascalia.
     function strisciaArcani(numeri) {
       const items = (numeri || []).map((n) => ({ n, sig: getSignificato(n, lang) })).filter((it) => imgMap[it.sig.arcano]);
       if (!items.length) { y += 4; return; }
-      const W = 50, H = Math.round(W * 788 / 400), G = 14, capH = 22;
+      const W = 52, H = Math.round(W * 788 / 400), G = 16, capH = 26;
       const rowW = items.length * W + (items.length - 1) * G;
-      ensure(H + capH + 16);
-      y += 4;
+      ensure(H + capH + 18);
+      y += 8;
       const top = y;
       let x = (PW - rowW) / 2;
       for (const it of items) {
         doc.addImage(imgMap[it.sig.arcano], 'JPEG', x, top, W, H);
-        doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); setText(PDF.muto);
-        doc.splitTextToSize(pdfText(`${it.n} - ${it.sig.nome}`), W + G - 4).slice(0, 2)
-          .forEach((ln, i) => doc.text(ln, x + W / 2, top + H + 9 + i * 8.5, { align: 'center' }));
+        doc.setDrawColor(PDF.linea[0], PDF.linea[1], PDF.linea[2]); doc.setLineWidth(0.6); doc.rect(x, top, W, H);
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(8.5); setText(PDF.oro);
+        doc.text(String(it.n), x + W / 2, top + H + 11, { align: 'center' });
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(7); setText(PDF.muto);
+        doc.splitTextToSize(pdfText(it.sig.nome), W + G - 2).slice(0, 2)
+          .forEach((ln, i) => doc.text(ln, x + W / 2, top + H + 19 + i * 8, { align: 'center' }));
         x += W + G;
       }
-      y = top + H + capH + 12;
+      y = top + H + capH + 14;
     }
     function titoloSezione(txt) {
       nuovaPagina();
-      doc.setFont('times', 'normal'); doc.setFontSize(22); setText(PDF.oro);
-      doc.text(pdfText(txt).toUpperCase(), PW / 2, y + 16, { align: 'center' }); y += 26;
-      setFill(PDF.linea); doc.rect(PW / 2 - 32, y, 64, 1, 'F'); y += 26;
+      y += 20;
+      doc.setFont('times', 'normal'); doc.setFontSize(24); setText(PDF.oro);
+      doc.text(pdfText(txt).toUpperCase(), PW / 2, y + 6, { align: 'center', charSpace: 2 }); y += 24;
+      setFill(PDF.linea); doc.rect(PW / 2 - 34, y, 68, 0.8, 'F'); y += 30;
     }
     /* --- 1. COPERTINA --- */
     pageBg();
-    y = PHt / 2 - 150;
+    y = PHt / 2 - 168;
     doc.setFont('times', 'normal'); doc.setFontSize(13); setText(PDF.oroChiaro);
-    doc.text('◆', PW / 2, y, { align: 'center' }); y += 44;
-    doc.setFontSize(34); setText(PDF.oro);
-    doc.text('MAPPA DEI TALENTI', PW / 2, y, { align: 'center' }); y += 34;
+    doc.text('◆', PW / 2, y, { align: 'center' }); y += 50;
+    doc.setFont('times', 'normal'); doc.setFontSize(33); setText(PDF.oro);
+    doc.text('MAPPA DEI TALENTI', PW / 2, y, { align: 'center', charSpace: 1.5 }); y += 24;
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(10); setText(PDF.oroChiaro);
+    doc.text(lang === 'en' ? 'COMPLETE REPORT' : 'RELAZIONE COMPLETA', PW / 2, y, { align: 'center', charSpace: 4 }); y += 42;
     doc.setFont('times', 'italic'); doc.setFontSize(20); setText(PDF.muto);
-    doc.text(pdfText(`${t('pdf.of')} ${mappa.input.nome || ''}`), PW / 2, y, { align: 'center' }); y += 40;
-    setFill(PDF.linea); doc.rect(PW / 2 - 90, y, 180, 1, 'F'); y += 34;
+    doc.text(pdfText(`${t('pdf.of')} ${mappa.input.nome || ''}`), PW / 2, y, { align: 'center' }); y += 38;
+    setFill(PDF.linea); doc.rect(PW / 2 - 90, y, 180, 0.8, 'F'); y += 36;
     const mesi = t('mesi');
-    doc.setFont('helvetica', 'normal'); doc.setFontSize(12); setText(PDF.testo);
-    doc.text(pdfText(`${t('results.bornOn')} ${mappa.input.giorno} ${mesi[mappa.input.mese - 1]} ${mappa.input.anno}`), PW / 2, y, { align: 'center' }); y += 20;
-    doc.text(pdfText(`${t('results.refYear')}: ${mappa.input.annoScelto}`), PW / 2, y, { align: 'center' }); y += 40;
-    doc.setFont('times', 'italic'); doc.setFontSize(10); setText(PDF.muto);
-    doc.text(pdfText(`${t('pdf.generated')} ${new Date().toLocaleDateString(lang)}`), PW / 2, y, { align: 'center' });
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(11.5); setText(PDF.testo);
+    doc.text(pdfText(`${t('results.bornOn')} ${mappa.input.giorno} ${mesi[mappa.input.mese - 1]} ${mappa.input.anno}`), PW / 2, y, { align: 'center' }); y += 19;
+    doc.text(pdfText(`${t('results.refYear')}: ${mappa.input.annoScelto}`), PW / 2, y, { align: 'center' });
+    doc.setFont('times', 'italic'); doc.setFontSize(9.5); setText(PDF.muto);
+    doc.text(pdfText(`${t('pdf.generated')} ${new Date().toLocaleDateString(lang)}`), PW / 2, PHt - 72, { align: 'center' });
 
     /* --- 1b. INTRODUZIONE --- */
     titoloSezione(t('pdf.introduction'));
-    renderBlocchi(rel.introduzione, { size: 11.5 });
+    renderBlocchi(rel.introduzione, { size: 11.5, justify: true, lh: 1.6 });
 
     /* --- 2-6. I CINQUE CAPITOLI (prosa + lame in miniatura) --- */
     for (const cap of rel.capitoli) {
@@ -1023,7 +1042,7 @@ export async function generaPDF(mappa) {
       } else {
         strisciaArcani(cap.arcani);
       }
-      renderBlocchi(cap.blocchi, { size: 11 });
+      renderBlocchi(cap.blocchi, { size: 11, justify: true, lh: 1.6 });
     }
 
     /* --- 8. CHIUSURA --- */
@@ -1036,6 +1055,18 @@ export async function generaPDF(mappa) {
     y += 24; setFill(PDF.linea); doc.rect(PW / 2 - 70, y, 140, 1, 'F'); y += 28;
     doc.setFont('times', 'normal'); doc.setFontSize(12); setText(PDF.oro);
     doc.text('Mappa dei Talenti', PW / 2, y, { align: 'center' });
+
+    /* --- PIÈ DI PAGINA + NUMERI DI PAGINA (la copertina resta senza) --- */
+    const totPag = doc.getNumberOfPages();
+    for (let p = 2; p <= totPag; p++) {
+      doc.setPage(p);
+      const fy = PHt - 38;
+      setFill(PDF.linea); doc.rect(M, fy, CW, 0.4, 'F');
+      doc.setFont('times', 'italic'); doc.setFontSize(8); setText(PDF.muto);
+      doc.text(pdfText(`Mappa dei Talenti${mappa.input.nome ? ' — ' + mappa.input.nome : ''}`), M, fy + 12);
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(8); setText(PDF.muto);
+      doc.text(`${p - 1} / ${totPag - 1}`, PW - M, fy + 12, { align: 'right' });
+    }
 
     doc.save(`mappa-talenti-${slugNome(mappa.input.nome)}.pdf`);
   } catch (err) {
