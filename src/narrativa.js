@@ -212,11 +212,11 @@ export function generaRelazione(mappa, lang = 'it') {
   return {
     introduzione,
     capitoli: [
-      { numero: 1, titolo: L.titoli[0], blocchi: cap1 },
-      { numero: 2, titolo: L.titoli[1], blocchi: cap2 },
-      { numero: 3, titolo: L.titoli[2], blocchi: cap3 },
-      { numero: 4, titolo: L.titoli[3], blocchi: cap4 },
-      { numero: 5, titolo: L.titoli[4], blocchi: cap5 },
+      { numero: 1, titolo: L.titoli[0], arcani: [b.desiderio, b.risposta, b.memoria], blocchi: cap1 },
+      { numero: 2, titolo: L.titoli[1], arcani: [mappa.conflittoBase, pp.risultato, mappa.equilibrio], blocchi: cap2 },
+      { numero: 3, titolo: L.titoli[2], arcani: ['nido', 'relazione', 'sociale', 'lavoro'].map((k) => A[k].b), blocchi: cap3 },
+      { numero: 4, titolo: L.titoli[3], arcani: [ek.prontoSoccorso, ek.chiaveEmozionale, ek.strumentoLavoroPotere, ek.progettoSenso, ek.personaggio], blocchi: cap4 },
+      { numero: 5, titolo: L.titoli[4], arcani: [nd], blocchi: cap5 },
     ],
   };
 }

@@ -921,9 +921,12 @@ export async function generaPDF(mappa) {
   track('pdf_generato', { destino: mappa.numeroDestino });
   try {
     const lang = getCurrentLang();
-    // Precarica la lama del Numero Destino: immagine solenne per il Capitolo 5.
-    const slugDestino = getSignificato(mappa.numeroDestino, lang).arcano;
-    const imgDestino = slugDestino ? await caricaImgArcano(slugDestino) : null;
+    const rel = generaRelazione(mappa, lang);
+    // Precarica le lame mostrate come miniature (gli arcani-chiave di ogni capitolo).
+    const slugSet = new Set();
+    rel.capitoli.forEach((c) => (c.arcani || []).forEach((n) => { const a = getSignificato(n, lang).arcano; if (a) slugSet.add(a); }));
+    const imgMap = {};
+    await Promise.all([...slugSet].map(async (s) => { imgMap[s] = await caricaImgArcano(s); }));
 
     const doc = new JsPDF({ unit: 'pt', format: 'a4' });
     const PW = doc.internal.pageSize.getWidth();
@@ -959,6 +962,25 @@ export async function generaPDF(mappa) {
       setFill(PDF.linea); doc.rect(M, y, 40, 0.8, 'F'); y += 14;
     }
     const renderBlocchi = (blocchi, opt = {}) => blocchi.forEach((bl) => { if (bl.h3) sottoTitolo(bl.h3); else paraBlocco(bl.p, opt); });
+    // Striscia di lame in miniatura (gli arcani del capitolo) con didascalia numero + nome.
+    function strisciaArcani(numeri) {
+      const items = (numeri || []).map((n) => ({ n, sig: getSignificato(n, lang) })).filter((it) => imgMap[it.sig.arcano]);
+      if (!items.length) { y += 4; return; }
+      const W = 50, H = Math.round(W * 788 / 400), G = 14, capH = 22;
+      const rowW = items.length * W + (items.length - 1) * G;
+      ensure(H + capH + 16);
+      y += 4;
+      const top = y;
+      let x = (PW - rowW) / 2;
+      for (const it of items) {
+        doc.addImage(imgMap[it.sig.arcano], 'JPEG', x, top, W, H);
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); setText(PDF.muto);
+        doc.splitTextToSize(pdfText(`${it.n} - ${it.sig.nome}`), W + G - 4).slice(0, 2)
+          .forEach((ln, i) => doc.text(ln, x + W / 2, top + H + 9 + i * 8.5, { align: 'center' }));
+        x += W + G;
+      }
+      y = top + H + capH + 12;
+    }
     function titoloSezione(txt) {
       nuovaPagina();
       doc.setFont('times', 'normal'); doc.setFontSize(22); setText(PDF.oro);
@@ -983,19 +1005,23 @@ export async function generaPDF(mappa) {
     doc.text(pdfText(`${t('pdf.generated')} ${new Date().toLocaleDateString(lang)}`), PW / 2, y, { align: 'center' });
 
     /* --- 1b. INTRODUZIONE --- */
-    const rel = generaRelazione(mappa, lang);
     titoloSezione(t('pdf.introduction'));
     renderBlocchi(rel.introduzione, { size: 11.5 });
 
-    /* --- 2-6. I CINQUE CAPITOLI (prosa continua, non più card) --- */
+    /* --- 2-6. I CINQUE CAPITOLI (prosa + lame in miniatura) --- */
     for (const cap of rel.capitoli) {
       titoloCapitolo(cap.numero, cap.titolo);
-      // Lama del Destino centrata, come immagine solenne d'apertura del Capitolo 5.
-      if (cap.numero === 5 && imgDestino) {
-        const iw = 96, ih = Math.round(iw * 788 / 400);
-        ensure(ih + 18);
-        doc.addImage(imgDestino, 'JPEG', PW / 2 - iw / 2, y, iw, ih);
-        y += ih + 20;
+      if (cap.numero === 5) {
+        // Capitolo del Destino: lama singola centrata, più grande, come immagine solenne.
+        const slug = getSignificato(mappa.numeroDestino, lang).arcano;
+        if (imgMap[slug]) {
+          const iw = 96, ih = Math.round(iw * 788 / 400);
+          ensure(ih + 18); y += 4;
+          doc.addImage(imgMap[slug], 'JPEG', PW / 2 - iw / 2, y, iw, ih);
+          y += ih + 18;
+        }
+      } else {
+        strisciaArcani(cap.arcani);
       }
       renderBlocchi(cap.blocchi, { size: 11 });
     }
