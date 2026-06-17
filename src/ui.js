@@ -7,7 +7,7 @@
 import { config, track } from './config.js';
 import { t, getCurrentLang } from './i18n.js';
 import { getSignificato, getCampoDescrizione } from './significati.js';
-import { generaNarrativa } from './narrativa.js';
+import { generaNarrativa, generaRelazione } from './narrativa.js';
 import { caricaStorico, eliminaMappa } from './storage.js';
 import { login, registraUtente, getUtenteCorrente, getLivello, logout } from './auth.js';
 
@@ -865,7 +865,6 @@ const PDF = {
   oro: [139, 105, 20], oroChiaro: [184, 144, 30], testo: [42, 31, 14],
   muto: [110, 82, 51], linea: [223, 196, 138], bg: [251, 248, 242],
 };
-const AMBITO_RGB = { nido: [139, 105, 20], relazione: [45, 90, 122], sociale: [58, 107, 85], lavoro: [122, 53, 53] };
 
 /** Normalizza i caratteri tipografici in ASCII (i font standard jsPDF non li rendono). */
 function pdfText(s) {
@@ -922,13 +921,9 @@ export async function generaPDF(mappa) {
   track('pdf_generato', { destino: mappa.numeroDestino });
   try {
     const lang = getCurrentLang();
-    // Precarica le immagini delle lame usate (6 numeri + PP + PP scelto)
-    const slugUsati = new Set();
-    [mappa.base.desiderio, mappa.base.risposta, mappa.base.memoria, mappa.conflittoBase, mappa.equilibrio, mappa.numeroDestino,
-      mappa.personalitaProfonda.risultato, mappa.ppAnnoScelto.risultato]
-      .forEach((v) => { const a = getSignificato(v, lang).arcano; if (a) slugUsati.add(a); });
-    const imgMap = {};
-    await Promise.all([...slugUsati].map(async (s) => { imgMap[s] = await caricaImgArcano(s); }));
+    // Precarica la lama del Numero Destino: immagine solenne per il Capitolo 5.
+    const slugDestino = getSignificato(mappa.numeroDestino, lang).arcano;
+    const imgDestino = slugDestino ? await caricaImgArcano(slugDestino) : null;
 
     const doc = new JsPDF({ unit: 'pt', format: 'a4' });
     const PW = doc.internal.pageSize.getWidth();
@@ -949,27 +944,27 @@ export async function generaPDF(mappa) {
       y += (opt.gap == null ? 5 : opt.gap);
     }
     function paraBlocco(txt, opt = {}) { String(txt || '').split(/\n{2,}/).forEach((p) => { if (p.trim()) para(p.trim(), opt); }); }
-    function lista(titolo, righe, opt = {}) {
-      if (titolo) { doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5); setText(PDF.muto); ensure(16); doc.text(pdfText(titolo).toUpperCase(), M, y); y += 13; }
-      (Array.isArray(righe) ? righe : String(righe).split('\n')).forEach((r) => { if (r && r.trim()) para('•  ' + r.trim(), { size: opt.size || 10, color: opt.color || PDF.muto, gap: 1 }); });
-      y += 5;
+    function titoloCapitolo(numero, titolo) {
+      nuovaPagina();
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(10); setText(PDF.oroChiaro);
+      doc.text(pdfText(`${t('pdf.chapter')} ${numero}`).toUpperCase(), PW / 2, y + 8, { align: 'center' }); y += 26;
+      doc.setFont('times', 'normal'); doc.setFontSize(22); setText(PDF.oro);
+      doc.text(pdfText(titolo), PW / 2, y + 8, { align: 'center' }); y += 24;
+      setFill(PDF.linea); doc.rect(PW / 2 - 32, y, 64, 1, 'F'); y += 26;
     }
-    function divisore(g = 14) { ensure(g + 6); setFill(PDF.linea); doc.rect(M, y, CW, 0.8, 'F'); y += g; }
+    function sottoTitolo(txt) {
+      ensure(40); y += 10;
+      doc.setFont('times', 'normal'); doc.setFontSize(15); setText(PDF.oro);
+      doc.text(pdfText(txt), M, y); y += 8;
+      setFill(PDF.linea); doc.rect(M, y, 40, 0.8, 'F'); y += 14;
+    }
+    const renderBlocchi = (blocchi, opt = {}) => blocchi.forEach((bl) => { if (bl.h3) sottoTitolo(bl.h3); else paraBlocco(bl.p, opt); });
     function titoloSezione(txt) {
       nuovaPagina();
       doc.setFont('times', 'normal'); doc.setFontSize(22); setText(PDF.oro);
       doc.text(pdfText(txt).toUpperCase(), PW / 2, y + 16, { align: 'center' }); y += 26;
       setFill(PDF.linea); doc.rect(PW / 2 - 32, y, 64, 1, 'F'); y += 26;
     }
-    const etichettaNumero = (valore, label) => {
-      doc.setFont('times', 'normal'); doc.setFontSize(26); setText(PDF.oro);
-      doc.text(String(valore), M, y + 20);
-      const nx = M + doc.getTextWidth(String(valore)) + 12;
-      doc.setFont('helvetica', 'bold'); doc.setFontSize(10.5); setText(PDF.muto);
-      doc.text(pdfText(label).toUpperCase(), nx, y + 16, { maxWidth: CW - 60 });
-      y += 34;
-    };
-
     /* --- 1. COPERTINA --- */
     pageBg();
     y = PHt / 2 - 150;
@@ -987,110 +982,23 @@ export async function generaPDF(mappa) {
     doc.setFont('times', 'italic'); doc.setFontSize(10); setText(PDF.muto);
     doc.text(pdfText(`${t('pdf.generated')} ${new Date().toLocaleDateString(lang)}`), PW / 2, y, { align: 'center' });
 
-    /* --- 1b. SINTESI NARRATIVA --- */
-    titoloSezione(t('section.sintesi'));
-    generaNarrativa(mappa, lang).forEach((p) => paraBlocco(p, { size: 11.5 }));
+    /* --- 1b. INTRODUZIONE --- */
+    const rel = generaRelazione(mappa, lang);
+    titoloSezione(t('pdf.introduction'));
+    renderBlocchi(rel.introduzione, { size: 11.5 });
 
-    /* --- 2. I SEI NUMERI FONDAMENTALI --- */
-    titoloSezione(t('pdf.sixNumbers'));
-    const numeri = [
-      ['desiderio', t('campo.desiderio'), mappa.base.desiderio],
-      ['risposta', t('campo.risposta'), mappa.base.risposta],
-      ['memoria', t('campo.memoria'), mappa.base.memoria],
-      ['conflittoBase', t('campo.conflittoBase'), mappa.conflittoBase],
-      ['equilibrio', t('campo.equilibrio'), mappa.equilibrio],
-      ['numeroDestino', t('campo.numeroDestino'), mappa.numeroDestino],
-    ];
-    for (const [campo, label, valore] of numeri) {
-      const sig = getSignificato(valore, lang);
-      const imgW = 70, imgH = Math.round(imgW * 788 / 400);
-      ensure(imgH + 30);
-      const top = y;
-      if (imgMap[sig.arcano]) doc.addImage(imgMap[sig.arcano], 'JPEG', PW - M - imgW, top, imgW, imgH);
-      etichettaNumero(valore, label);
-      doc.setFont('times', 'italic'); doc.setFontSize(13); setText(PDF.testo);
-      doc.text(pdfText(sig.nome + (sig.keyword ? '  -  ' + sig.keyword : '')), M, y, { maxWidth: CW - imgW - 20 }); y += 18;
-      if (y < top + imgH + 8) y = top + imgH + 8;
-      para(getCampoDescrizione(campo, lang), { style: 'italic', color: PDF.muto });
-      paraBlocco(sig.descrizione);
-      if (sig.domande && sig.domande.length) lista(t('tooltip.questions'), sig.domande);
-      divisore();
+    /* --- 2-6. I CINQUE CAPITOLI (prosa continua, non più card) --- */
+    for (const cap of rel.capitoli) {
+      titoloCapitolo(cap.numero, cap.titolo);
+      // Lama del Destino centrata, come immagine solenne d'apertura del Capitolo 5.
+      if (cap.numero === 5 && imgDestino) {
+        const iw = 96, ih = Math.round(iw * 788 / 400);
+        ensure(ih + 18);
+        doc.addImage(imgDestino, 'JPEG', PW / 2 - iw / 2, y, iw, ih);
+        y += ih + 20;
+      }
+      renderBlocchi(cap.blocchi, { size: 11 });
     }
-
-    /* --- 3. I QUATTRO AMBITI --- */
-    titoloSezione(t('section.ambiti'));
-    for (const key of ['nido', 'relazione', 'sociale', 'lavoro']) {
-      const seq = mappa.ambiti[key];
-      ensure(80);
-      doc.setFont('times', 'normal'); doc.setFontSize(16); setText(AMBITO_RGB[key]);
-      doc.text(pdfText(t('ambito.' + key)).toUpperCase(), M, y + 4); y += 20;
-      para(getCampoDescrizione(key, lang), { style: 'italic', color: PDF.muto });
-      [['seq.b', seq.b], ['seq.a', seq.a], ['seq.c', seq.c], ['seq.sfumatura', seq.sfumatura]].forEach(([k, val]) => {
-        const s = getSignificato(val, lang);
-        para(`${t(k)}: ${val} - ${s.nome}${s.keyword ? ' (' + s.keyword + ')' : ''}`, { x: M + 10, size: 10, color: PDF.testo, gap: 2 });
-      });
-      divisore();
-    }
-
-    /* --- 4. PERSONALITÀ PROFONDA (+ anno scelto) --- */
-    titoloSezione(t('campo.pp'));
-    para(getCampoDescrizione('pp', lang), { style: 'italic', color: PDF.muto });
-    const bloccoPP = (ppObj, titolo) => {
-      const sig = getSignificato(ppObj.risultato, lang);
-      ensure(50);
-      if (titolo) { doc.setFont('times', 'normal'); doc.setFontSize(15); setText(PDF.oro); doc.text(pdfText(titolo), M, y); y += 20; }
-      para(`${t('campo.verticale')} ${ppObj.verticale}   ·   ${t('campo.orizzontale')} ${ppObj.orizzontale}   ·   ${ppObj.risultato} ${sig.nome}${sig.keyword ? ' (' + sig.keyword + ')' : ''}`, { font: 'helvetica', style: 'bold', size: 10.5, color: PDF.testo });
-      paraBlocco(sig.descrizione);
-      if (sig.ombra) lista(t('tooltip.shadow'), sig.ombra);
-      if (sig.dono) lista(t('tooltip.gift'), sig.dono);
-    };
-    bloccoPP(mappa.personalitaProfonda, null);
-    divisore(18);
-    bloccoPP(mappa.ppAnnoScelto, `${t('campo.ppAnnoScelto')} — ${mappa.input.annoScelto}`);
-
-    /* --- 5. ELEMENTI CHIAVE --- */
-    titoloSezione(t('section.elementiChiave'));
-    const elementi = [
-      ['prontoSoccorso', t('campo.prontoSoccorso'), mappa.elementiChiave.prontoSoccorso],
-      ['chiaveEmozionale', t('campo.chiaveEmozionale'), mappa.elementiChiave.chiaveEmozionale],
-      ['strumentoLavoroPotere', t('campo.strumento'), mappa.elementiChiave.strumentoLavoroPotere],
-      ['progettoSenso', t('campo.progetto'), mappa.elementiChiave.progettoSenso],
-      ['personaggio', t('campo.personaggio'), mappa.elementiChiave.personaggio],
-    ];
-    for (const [campo, label, valore] of elementi) {
-      const sig = getSignificato(valore, lang);
-      ensure(60);
-      etichettaNumero(valore, `${label} — ${sig.nome}`);
-      para(getCampoDescrizione(campo, lang), { style: 'italic', color: PDF.muto });
-      paraBlocco(sig.descrizione);
-      divisore();
-    }
-
-    /* --- 6. GIUSTIFICAZIONI --- */
-    titoloSezione(t('section.giustificazioni'));
-    para(t('pdf.giustIntro'), { color: PDF.muto });
-    y += 4;
-    [['nido', t('ambito.nido'), mappa.giustificazioni.nido],
-      ['relazione', t('ambito.relazione'), mappa.giustificazioni.relazione],
-      ['sociale', t('ambito.sociale'), mappa.giustificazioni.sociale],
-      ['lavoro', t('ambito.lavoro'), mappa.giustificazioni.lavoro],
-      ['equilibrio', t('campo.equilibrio'), mappa.giustificazioni.equilibrio],
-      ['prontoSoccorso', t('campo.prontoSoccorso'), mappa.giustificazioni.prontoSoccorso]].forEach(([campo, label, valore]) => {
-      const sig = getSignificato(valore, lang);
-      ensure(40);
-      etichettaNumero(valore, `${label} — ${sig.nome}`);
-      para(getCampoDescrizione(campo, lang), { style: 'italic', color: PDF.muto, gap: 8 });
-    });
-
-    /* --- 7. SUPER SEQUENZA --- */
-    titoloSezione(t('section.superSequenza'));
-    para(getCampoDescrizione('superSequenza', lang), { style: 'italic', color: PDF.muto });
-    y += 6;
-    const ss = mappa.superSequenza;
-    [['seq.b', ss.b], ['seq.a', ss.a], ['seq.c', ss.c], ['seq.sfumatura', ss.sfumatura]].forEach(([k, val]) => {
-      const s = getSignificato(val, lang);
-      para(`${t(k)}: ${val} - ${s.nome}${s.keyword ? ' (' + s.keyword + ')' : ''}`, { x: M + 10, size: 11, color: PDF.testo, gap: 3 });
-    });
 
     /* --- 8. CHIUSURA --- */
     nuovaPagina();
