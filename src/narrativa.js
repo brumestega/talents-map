@@ -61,6 +61,10 @@ export function generaRelazione(mappa, lang = 'it') {
   const S = (n) => getSignificato(n, lang);
   const campo = (k) => (getCampoDescrizione(k, lang) || '').trim();
   const nm = (n) => `${n} - ${S(n).nome}`;            // es. "8 - La Giustizia"
+  // Le descrizioni degli Arcani esistono solo in italiano: in EN si omettono
+  // (nome, keyword e descrizioni dei campi sono invece tradotti) per non
+  // mescolare le due lingue nel documento.
+  const descArc = (n) => (it ? S(n).descrizione : '');
 
   const b = mappa.base;
   const A = mappa.ambiti;
@@ -107,22 +111,22 @@ export function generaRelazione(mappa, lang = 'it') {
 
   /* --- CAPITOLO 1 — Le Tue Fondamenta --- */
   const cap1 = clean(it ? [
-    P('Ogni mappa comincia da tre numeri che non si scelgono: sono il punto di partenza con cui sei arrivato nel mondo. Non un destino scritto nella pietra, ma la materia prima con cui hai costruito tutto il resto.'),
+    P('Ogni mappa comincia da tre numeri che non si scelgono: sono il punto di partenza con cui sei venuto al mondo. Non un destino scritto nella pietra, ma la materia prima con cui hai costruito tutto il resto.'),
     P(`Il primo è il tuo ${L.desiderio}, il numero ${nm(b.desiderio)}. ${campo('desiderio')}`),
-    P(S(b.desiderio).descrizione),
-    P(`A questo si affianca la tua ${L.risposta}, il numero ${nm(b.risposta)}: il modo in cui reagisci prima ancora di pensare. ${campo('risposta')}`),
-    P(S(b.risposta).descrizione),
+    P(descArc(b.desiderio)),
+    P(`A questo si affianca la tua ${L.risposta}, il numero ${nm(b.risposta)}: il modo in cui reagisci d’istinto. ${campo('risposta')}`),
+    P(descArc(b.risposta)),
     P(`Sotto a entrambi scorre la tua ${L.memoria}, il numero ${nm(b.memoria)}. ${campo('memoria')} Questo numero non parla solo di te: parla di chi è venuto prima, del codice familiare che porti senza averlo scelto.`),
-    P(S(b.memoria).descrizione),
+    P(descArc(b.memoria)),
     P('Insieme, questi tre numeri non vivono separati: si parlano, si scontrano e generano la tensione che diventerà il tuo Conflitto Base, di cui parla il prossimo capitolo.'),
   ] : [
-    P('Every map begins with three numbers you did not choose: they are the starting point you arrived in the world with. Not a destiny carved in stone, but the raw material from which you built everything else.'),
+    P('Every map begins with three numbers you did not choose: they are the starting point you came into the world with. Not a destiny carved in stone, but the raw material from which you built everything else.'),
     P(`The first is your ${L.desiderio}, number ${nm(b.desiderio)}. ${campo('desiderio')}`),
-    P(S(b.desiderio).descrizione),
-    P(`Alongside it stands your ${L.risposta}, number ${nm(b.risposta)}: the way you react before you even think. ${campo('risposta')}`),
-    P(S(b.risposta).descrizione),
+    P(descArc(b.desiderio)),
+    P(`Alongside it stands your ${L.risposta}, number ${nm(b.risposta)}: the way you react on instinct. ${campo('risposta')}`),
+    P(descArc(b.risposta)),
     P(`Beneath them both runs your ${L.memoria}, number ${nm(b.memoria)}. ${campo('memoria')} This number speaks not only of you: it speaks of those who came before, of the family code you carry without having chosen it.`),
-    P(S(b.memoria).descrizione),
+    P(descArc(b.memoria)),
     P('Together, these three numbers do not live apart: they speak, they clash, and they generate the tension that will become your Base Conflict, the subject of the next chapter.'),
   ]);
 
@@ -130,23 +134,23 @@ export function generaRelazione(mappa, lang = 'it') {
   const cap2 = clean(it ? [
     P('I tre numeri del primo capitolo, messi insieme, generano una frizione. Questa frizione ha un nome: il Conflitto Base.'),
     P(`Il tuo ${L.conflitto} è il numero ${nm(mappa.conflittoBase)}. ${campo('conflittoBase')}`),
-    P(S(mappa.conflittoBase).descrizione),
+    P(descArc(mappa.conflittoBase)),
     P('Questo conflitto non è un problema da risolvere una volta per tutte: è la corrente di fondo che attraversa ogni area della tua vita, e che ritroverai, in forme diverse, in ognuno dei quattro ambiti del prossimo capitolo.'),
     P(`Parallelamente al conflitto c’è la tua struttura più profonda: la ${L.pp}, che in te risulta ${nm(pp.risultato)} (calcolata sia in verticale, ${pp.verticale}, sia in orizzontale, ${pp.orizzontale}: prevale il numero più alto). ${campo('pp')}`),
-    P(S(pp.risultato).descrizione),
+    P(descArc(pp.risultato)),
     P(`Per l’anno ${annoScelto}, questa stessa struttura si colora del ${nm(ppA.risultato)}: una tonalità temporanea che accompagna il periodo che stai attraversando, senza sostituire la tua natura di fondo.`),
     P(`Tra il conflitto che ti attraversa e la struttura che ti sostiene esiste un punto di bilanciamento: il tuo ${L.equilibrio}, il numero ${nm(mappa.equilibrio)}. ${campo('equilibrio')} Non è un luogo statico in cui restare per sempre, ma una frequenza a cui puoi tornare ogni volta che la riconosci.`),
-    P(S(mappa.equilibrio).descrizione),
+    P(descArc(mappa.equilibrio)),
   ] : [
     P('The three numbers of the first chapter, brought together, generate a friction. That friction has a name: the Base Conflict.'),
     P(`Your ${L.conflitto} is number ${nm(mappa.conflittoBase)}. ${campo('conflittoBase')}`),
-    P(S(mappa.conflittoBase).descrizione),
+    P(descArc(mappa.conflittoBase)),
     P('This conflict is not a problem to be solved once and for all: it is the undercurrent that runs through every area of your life, and which you will meet again, in different forms, in each of the four domains of the next chapter.'),
     P(`Alongside the conflict stands your deepest structure: the ${L.pp}, which in you comes out as ${nm(pp.risultato)} (calculated both vertically, ${pp.verticale}, and horizontally, ${pp.orizzontale}: the higher number prevails). ${campo('pp')}`),
-    P(S(pp.risultato).descrizione),
+    P(descArc(pp.risultato)),
     P(`For the year ${annoScelto}, this same structure takes on the hue of ${nm(ppA.risultato)}: a temporary colour that accompanies the period you are moving through, without replacing your underlying nature.`),
     P(`Between the conflict that runs through you and the structure that sustains you lies a point of balance: your ${L.equilibrio}, number ${nm(mappa.equilibrio)}. ${campo('equilibrio')} It is not a static place to remain in forever, but a frequency you can return to whenever you recognise it.`),
-    P(S(mappa.equilibrio).descrizione),
+    P(descArc(mappa.equilibrio)),
   ]);
 
   /* --- CAPITOLO 3 — I Quattro Ambiti (prosa per ambito) --- */
@@ -160,12 +164,12 @@ export function generaRelazione(mappa, lang = 'it') {
       return it ? [
         H(ambNome),
         P(`Nell’ambito ${ambNome} il conflitto si manifesta attraverso il numero ${nm(seq.b)}. ${campo(key)}`),
-        P(S(seq.b).descrizione),
+        P(descArc(seq.b)),
         P(`Questo nodo genera una risposta emotiva, il numero ${nm(seq.a)}, che a sua volta trova una via di trasformazione nel numero ${nm(seq.c)}. Quando attraversi consapevolmente questo percorso ne emerge una sfumatura: il numero ${nm(seq.sfumatura)}, il dono che questo ambito ha da offrirti quando non lo eviti.`),
       ] : [
         H(ambNome),
         P(`In the ${ambNome} domain the conflict shows itself through number ${nm(seq.b)}. ${campo(key)}`),
-        P(S(seq.b).descrizione),
+        P(descArc(seq.b)),
         P(`This knot generates an emotional response, number ${nm(seq.a)}, which in turn finds a path of transformation in number ${nm(seq.c)}. When you walk this path consciously, a nuance emerges: number ${nm(seq.sfumatura)}, the gift this domain has to offer you when you stop avoiding it.`),
       ];
     }),
@@ -198,14 +202,13 @@ export function generaRelazione(mappa, lang = 'it') {
   const cap5 = clean(it ? [
     P('Tutto quello che hai letto fin qui converge in un solo numero: non come somma meccanica, ma come integrale di ogni conflitto che hai attraversato in questo documento.'),
     P(`Il tuo ${L.destino} è il numero ${nm(nd)}. ${campo('numeroDestino')}`),
-    P(S(nd).descrizione),
+    P(descArc(nd)),
     domandeND.length ? P(`Una domanda da portare con te: ${domandeND.join(' ')}`) : P(''),
     P('Questo numero non è un punto di arrivo, ma una direzione. La mappa che hai appena letto non ti definisce in modo definitivo: ti offre un linguaggio per riconoscere schemi che forse già sentivi, senza avere ancora le parole per nominarli.'),
   ] : [
     P('Everything you have read so far converges into a single number: not as a mechanical sum, but as the integral of every conflict you have crossed in this document.'),
     P(`Your ${L.destino} is number ${nm(nd)}. ${campo('numeroDestino')}`),
-    P(S(nd).descrizione),
-    domandeND.length ? P(`A question to carry with you: ${domandeND.join(' ')}`) : P(''),
+    P(descArc(nd)),
     P('This number is not a point of arrival, but a direction. The map you have just read does not define you once and for all: it offers you a language to recognise patterns you perhaps already felt, without yet having the words to name them.'),
   ]);
 
