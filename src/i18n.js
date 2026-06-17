@@ -104,6 +104,8 @@ const translations = {
     'tooltip.shadow': 'Ombra',
     'tooltip.gift': 'Dono',
     'tooltip.questions': 'Domande da porsi',
+    'tooltip.fullSheet': 'Scheda completa',
+    'scheda.genealogia': 'Genealogia e corrispondenze',
 
     'error.generic': 'Qualcosa è andato storto durante il calcolo. Controlla i dati e riprova.',
     'error.render': 'Si è verificato un problema nel mostrare questa sezione.',
@@ -233,6 +235,8 @@ const translations = {
     'tooltip.shadow': 'Shadow',
     'tooltip.gift': 'Gift',
     'tooltip.questions': 'Questions to ask',
+    'tooltip.fullSheet': 'Full sheet',
+    'scheda.genealogia': 'Genealogy & correspondences',
 
     'error.generic': 'Something went wrong during the calculation. Check your data and try again.',
     'error.render': 'There was a problem displaying this section.',

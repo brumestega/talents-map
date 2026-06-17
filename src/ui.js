@@ -60,9 +60,9 @@ const LABEL_KEY = {
 const labelCampo = (campo) => (LABEL_KEY[campo] ? t(LABEL_KEY[campo]) : campo);
 
 /** Costruisce un <picture> per la lama dell'Arcano (webp + fallback jpg). */
-function arcanoPicture(slug, alt, cls = 'tooltip__arcano') {
+function arcanoPicture(slug, alt, cls = 'tooltip__arcano', numero) {
   const base = config.arcaniPath + slug;
-  return el('picture', { class: cls },
+  return el('picture', { class: cls, dataset: numero != null ? { numero: String(numero) } : undefined },
     el('source', { srcset: `${base}.webp`, type: 'image/webp' }),
     el('img', { src: `${base}.jpg`, alt, loading: 'lazy', width: '400', height: '788' }));
 }
@@ -104,7 +104,7 @@ function sezione(id, titolo, ...corpo) {
 function cardNumero(campo, etichetta, valore, opts = {}) {
   const sig = opts.arcano ? getSignificato(valore, getCurrentLang()) : null;
   return el('div', { class: 'num-card' + (opts.cardClass ? ` ${opts.cardClass}` : '') + (sig ? ' num-card--arcano' : ''), style: opts.color ? `--ambito-color:${opts.color}` : undefined },
-    sig && sig.arcano ? arcanoPicture(sig.arcano, sig.nome, 'card-arcano') : null,
+    sig && sig.arcano ? arcanoPicture(sig.arcano, sig.nome, 'card-arcano', valore) : null,
     el('span', { class: 'num-card__label' }, etichetta),
     numeroEl(valore, { campo, etichetta, size: opts.size, color: opts.color }),
     sig
@@ -268,7 +268,7 @@ function buildSuperSequenza(m) {
 function buildNumeroDestino(m) {
   const sig = getSignificato(m.numeroDestino, getCurrentLang());
   const card = (config.showArcani && sig.arcano)
-    ? arcanoPicture(sig.arcano, `Arcano ${m.numeroDestino}: ${sig.nome}`, 'destino-arcano')
+    ? arcanoPicture(sig.arcano, `Arcano ${m.numeroDestino}: ${sig.nome}`, 'destino-arcano', m.numeroDestino)
     : null;
   return sezione('numero-destino', null,
     el('div', { class: 'destino-sep', 'aria-hidden': 'true' },
@@ -497,10 +497,14 @@ function tooltipNode() {
 }
 
 function collegaTooltip(content) {
-  if (!config.showTooltips) return;
   if (content._tooltipBound) return; // delega una sola volta (l'elemento persiste tra i render)
   content._tooltipBound = true;
   content.addEventListener('click', (e) => {
+    // Click su una lama (immagine) → scheda completa dell'Arcano
+    const card = e.target.closest('.card-arcano[data-numero], .destino-arcano[data-numero]');
+    if (card) { e.stopPropagation(); mostraSchedaArcano(Number(card.dataset.numero)); return; }
+    // Click su un numero → tooltip
+    if (!config.showTooltips) return;
     const btn = e.target.closest('.numero');
     if (!btn || btn.tagName !== 'BUTTON') return;
     e.stopPropagation();
@@ -533,6 +537,7 @@ function apriTooltip(trigger) {
     sig.ombra ? el('details', { class: 'tooltip__fold' }, el('summary', {}, t('tooltip.shadow')), el('p', { class: 'tooltip__foldtext' }, sig.ombra)) : null,
     sig.dono ? el('details', { class: 'tooltip__fold' }, el('summary', {}, t('tooltip.gift')), el('p', { class: 'tooltip__foldtext' }, sig.dono)) : null,
     (sig.domande && sig.domande.length) ? el('details', { class: 'tooltip__fold' }, el('summary', {}, t('tooltip.questions')), el('ul', { class: 'tooltip__domande' }, ...sig.domande.map((q) => el('li', {}, q)))) : null,
+    el('button', { class: 'tooltip__sheet', type: 'button', onclick: () => { chiudiTooltip(); mostraSchedaArcano(numero, campo); } }, `${t('tooltip.fullSheet')} →`),
   );
 
   tip.hidden = false;
@@ -561,6 +566,66 @@ function posizionaTooltip(tip, trigger) {
 export function chiudiTooltip() {
   if (_tooltipEl) _tooltipEl.hidden = true;
   if (_tooltipTrigger) { _tooltipTrigger.setAttribute('aria-expanded', 'false'); _tooltipTrigger = null; }
+}
+
+/* ===========================================================================
+ * SCHEDA COMPLETA DELL'ARCANO (overlay)
+ * ======================================================================== */
+
+/**
+ * Mostra la scheda completa di un Arcano: immagine grande, descrizione,
+ * Dono, Ombra, Genealogia e Domande.
+ * @param {number} numero  1..22
+ * @param {string} [campo] chiave campo (per la descrizione contestuale)
+ */
+export function mostraSchedaArcano(numero, campo) {
+  const lang = getCurrentLang();
+  const sig = getSignificato(numero, lang);
+  if (!sig || !sig.nome) return;
+  chiudiTooltip();
+
+  const onEsc = (e) => { if (e.key === 'Escape') chiudi(); };
+  function chiudi() {
+    document.removeEventListener('keydown', onEsc);
+    overlay.classList.remove('is-open');
+    setTimeout(() => overlay.remove(), prefersReducedMotion() ? 0 : 250);
+  }
+
+  const righe = (titolo, valore) => {
+    const arr = Array.isArray(valore) ? valore : String(valore || '').split('\n').filter(Boolean);
+    if (!arr.length) return null;
+    return el('section', { class: 'scheda__sec' },
+      el('h4', { class: 'scheda__h' }, titolo),
+      el('ul', { class: 'scheda__list' }, ...arr.map((x) => el('li', {}, x))));
+  };
+  const testo = (titolo, txt) => txt ? el('section', { class: 'scheda__sec' },
+    el('h4', { class: 'scheda__h' }, titolo),
+    el('p', { class: 'scheda__p' }, txt)) : null;
+
+  const overlay = el('div', { class: 'scheda-overlay' });
+  const box = el('div', { class: 'scheda', role: 'dialog', 'aria-modal': 'true', 'aria-label': sig.nome },
+    el('button', { class: 'scheda__close', type: 'button', 'aria-label': t('dialog.close'), onclick: chiudi }, '×'),
+    el('div', { class: 'scheda__head' },
+      sig.arcano ? arcanoPicture(sig.arcano, `${numero} ${sig.nome}`, 'scheda__arcano') : null,
+      el('div', { class: 'scheda__headinfo' },
+        el('span', { class: 'scheda__num' }, String(numero)),
+        el('h3', { class: 'scheda__nome' }, sig.nome),
+        sig.keyword ? el('p', { class: 'scheda__verbo' }, sig.keyword) : null,
+        campo ? el('p', { class: 'scheda__campo' }, labelCampo(campo)) : null)),
+    (campo && getCampoDescrizione(campo, lang)) ? el('p', { class: 'scheda__contesto' }, getCampoDescrizione(campo, lang)) : null,
+    sig.descrizione ? el('div', { class: 'scheda__sec' }, ...sig.descrizione.split(/\n{2,}/).filter(Boolean).map((p) => el('p', { class: 'scheda__p' }, p))) : null,
+    testo(t('tooltip.gift'), sig.dono),
+    testo(t('tooltip.shadow'), sig.ombra),
+    righe(t('scheda.genealogia'), sig.genealogia),
+    righe(t('tooltip.questions'), sig.domande));
+
+  overlay.append(box);
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) chiudi(); });
+  document.addEventListener('keydown', onEsc);
+  document.body.append(overlay);
+  requestAnimationFrame(() => overlay.classList.add('is-open'));
+  box.scrollTop = 0;
+  track('scheda_aperta', { numero });
 }
 
 /* ===========================================================================
