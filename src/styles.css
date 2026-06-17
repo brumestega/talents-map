@@ -536,6 +536,24 @@ body {
 .pdf-toast { position: fixed; left: 50%; bottom: calc(24px + var(--safe-bottom)); transform: translateX(-50%); z-index: 620; max-width: 90vw; background: var(--surface); color: var(--crimson); border: 1px solid color-mix(in oklab, var(--crimson) 40%, transparent); border-radius: var(--radius-sm); padding: 0.8rem 1.2rem; font-size: 0.88rem; box-shadow: var(--shadow); animation: fadeIn 0.25s var(--ease); }
 
 /* --------------------------------------------------------------------- */
+/* SINTESI NARRATIVA · INDICE · TORNA SU · TOAST (style v2)              */
+/* --------------------------------------------------------------------- */
+.narrativa { max-width: 680px; margin: 0 auto; }
+.narrativa__p { font-family: var(--font-display); font-size: 1.16rem; line-height: 1.75; color: var(--text); margin-bottom: 1rem; }
+.narrativa__p--lead::first-letter { font-size: 2.6em; float: left; line-height: 0.82; padding: 0.04em 0.12em 0 0; color: var(--accent); font-weight: 600; }
+
+.quick-nav { position: sticky; top: 52px; z-index: 20; display: flex; gap: 0.5rem; overflow-x: auto; padding: 0.6rem 0.2rem; margin-bottom: 1.6rem; background: color-mix(in oklab, var(--bg) 78%, transparent); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); scrollbar-width: thin; }
+.quick-nav__item { flex: 0 0 auto; background: transparent; border: 1px solid var(--border-soft); color: var(--text-2); border-radius: 999px; padding: 0.35rem 0.85rem; font-size: 0.73rem; letter-spacing: 0.04em; white-space: nowrap; cursor: pointer; transition: color 0.2s, border-color 0.2s, background 0.2s; }
+.quick-nav__item:hover { color: var(--accent); border-color: var(--border); background: var(--accent-soft); }
+
+.result-section { scroll-margin-top: 110px; }
+
+#to-top { position: fixed; right: calc(18px + var(--safe-bottom)); bottom: calc(18px + var(--safe-bottom)); z-index: 40; width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--border); background: var(--surface); color: var(--accent); font-size: 1.2rem; line-height: 1; cursor: pointer; box-shadow: var(--shadow-soft); transition: transform 0.2s, background 0.2s, color 0.2s; }
+#to-top:hover { transform: translateY(-2px); background: var(--accent); color: var(--bg); }
+
+.app-toast { position: fixed; left: 50%; bottom: calc(24px + var(--safe-bottom)); transform: translateX(-50%); z-index: 620; max-width: 90vw; background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 999px; padding: 0.7rem 1.3rem; font-size: 0.86rem; box-shadow: var(--shadow); animation: fadeIn 0.25s var(--ease); }
+
+/* --------------------------------------------------------------------- */
 /* RESPONSIVE                                                            */
 /* --------------------------------------------------------------------- */
 @media (min-width: 600px) {

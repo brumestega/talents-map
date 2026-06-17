@@ -37,6 +37,11 @@ const translations = {
     'results.refYear': 'Anno di riferimento',
     'results.back': '← Nuova mappa',
     'results.save': 'Salva / Stampa',
+    'results.share': 'Copia link',
+    'results.toTop': 'Torna su',
+    'share.copied': 'Link copiato negli appunti',
+    'share.copyManual': 'Copia questo link:',
+    'section.sintesi': 'La tua mappa in sintesi',
     'results.printedOn': 'Mappa generata il',
 
     'section.base': 'I Tre Numeri Fondamentali',
@@ -161,6 +166,11 @@ const translations = {
     'results.refYear': 'Reference year',
     'results.back': '← New map',
     'results.save': 'Save / Print',
+    'results.share': 'Copy link',
+    'results.toTop': 'Back to top',
+    'share.copied': 'Link copied to clipboard',
+    'share.copyManual': 'Copy this link:',
+    'section.sintesi': 'Your map at a glance',
     'results.printedOn': 'Map generated on',
 
     'section.base': 'The Three Core Numbers',

@@ -7,6 +7,7 @@
 import { config, track } from './config.js';
 import { t, getCurrentLang } from './i18n.js';
 import { getSignificato, getCampoDescrizione } from './significati.js';
+import { generaNarrativa } from './narrativa.js';
 import { caricaStorico, eliminaMappa } from './storage.js';
 import { login, registraUtente, getUtenteCorrente, getLivello, logout } from './auth.js';
 
@@ -282,12 +283,38 @@ function buildNumeroDestino(m) {
         sig.keyword ? el('span', { class: 'destino-verbo' }, ` · ${sig.keyword}`) : null)));
 }
 
+/* Sintesi narrativa (legge la mappa nel suo insieme) */
+function buildNarrativa(mappa) {
+  const paras = generaNarrativa(mappa, getCurrentLang());
+  return sezione('sintesi', t('section.sintesi'),
+    el('div', { class: 'narrativa' }, ...paras.map((p, i) => el('p', { class: 'narrativa__p' + (i === 0 ? ' narrativa__p--lead' : '') }, p))));
+}
+
+/* Indice di navigazione rapida tra le sezioni */
+const INDICE_VOCI = [
+  ['sintesi', 'section.sintesi'], ['base', 'section.base'], ['conflitto-pp', 'section.conflittoPp'],
+  ['equilibrio', 'section.equilibrio'], ['ambiti', 'section.ambiti'], ['elementi-chiave', 'section.elementiChiave'],
+  ['pp-anno-scelto', 'section.ppAnnoScelto'], ['giustificazioni', 'section.giustificazioni'],
+  ['super-sequenza', 'section.superSequenza'], ['numero-destino', 'section.numeroDestino'],
+];
+function buildIndice() {
+  const nav = el('nav', { class: 'quick-nav', 'aria-label': t('section.sintesi') });
+  INDICE_VOCI.forEach(([id, key]) => {
+    nav.append(el('button', {
+      class: 'quick-nav__item', type: 'button',
+      onclick: () => { const s = document.querySelector(`[data-section="${id}"]`); if (s) s.scrollIntoView({ behavior: prefersReducedMotion() ? 'auto' : 'smooth', block: 'start' }); },
+    }, t(key)));
+  });
+  return nav;
+}
+
 /* Footer risultati */
-function buildFooter(onNuovaMappa, onSalva) {
+function buildFooter(handlers) {
   return el('div', { class: 'results-footer' },
-    el('button', { class: 'btn btn--ghost', type: 'button', onclick: onNuovaMappa }, t('results.back')),
+    el('button', { class: 'btn btn--ghost', type: 'button', onclick: handlers.onNuovaMappa }, t('results.back')),
+    handlers.onCondividi ? el('button', { class: 'btn btn--ghost', type: 'button', onclick: handlers.onCondividi }, t('results.share')) : null,
     config.showPdfExport
-      ? el('button', { class: 'btn btn--gold', type: 'button', onclick: onSalva }, t('results.save'))
+      ? el('button', { class: 'btn btn--gold', type: 'button', onclick: handlers.onSalva }, t('results.save'))
       : null);
 }
 
@@ -321,6 +348,8 @@ function popolaRisultati(mappa, handlers = {}) {
     content.innerHTML = '';
     content.append(
       buildIntestazione(mappa),
+      buildIndice(),
+      buildNarrativa(mappa),
       buildBase(mappa),
       buildConflittoPp(mappa),
       buildEquilibrio(mappa),
@@ -330,7 +359,7 @@ function popolaRisultati(mappa, handlers = {}) {
       buildGiustificazioni(mappa),
       buildSuperSequenza(mappa),
       buildNumeroDestino(mappa),
-      buildFooter(handlers.onNuovaMappa, handlers.onSalva),
+      buildFooter(handlers),
     );
     const dbg = buildDebug(mappa);
     if (dbg) content.append(dbg);
@@ -359,7 +388,29 @@ export function mostraRisultati(mappa, handlers = {}) {
   screenResults.hidden = false;
   screenResults.classList.add('is-entering');
   window.scrollTo({ top: 0, behavior: prefersReducedMotion() ? 'auto' : 'smooth' });
+  attivaBackToTop();
   track('mappa_visualizzata', { numeroDestino: mappa.numeroDestino });
+}
+
+/** Toast neutro (feedback non bloccante). */
+export function mostraToast(msg) {
+  const to = el('div', { class: 'app-toast', role: 'status' }, msg);
+  document.body.append(to);
+  setTimeout(() => to.remove(), 3000);
+}
+
+/** Pulsante "torna su" che appare allo scroll. */
+let _backToTop = false;
+function attivaBackToTop() {
+  if (_backToTop) return;
+  _backToTop = true;
+  const btn = el('button', { id: 'to-top', type: 'button', 'aria-label': t('results.toTop'), hidden: true },
+    el('span', { 'aria-hidden': 'true' }, '↑'));
+  btn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: prefersReducedMotion() ? 'auto' : 'smooth' }));
+  document.body.append(btn);
+  const onScroll = () => { btn.hidden = !(window.scrollY > 500 && !$('#screen-results').hidden); };
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
 }
 
 /** Ri-renderizza i risultati (es. al cambio lingua) solo se già visibili. */
@@ -870,6 +921,10 @@ export async function generaPDF(mappa) {
     doc.text(pdfText(`${t('results.refYear')}: ${mappa.input.annoScelto}`), PW / 2, y, { align: 'center' }); y += 40;
     doc.setFont('times', 'italic'); doc.setFontSize(10); setText(PDF.muto);
     doc.text(pdfText(`${t('pdf.generated')} ${new Date().toLocaleDateString(lang)}`), PW / 2, y, { align: 'center' });
+
+    /* --- 1b. SINTESI NARRATIVA --- */
+    titoloSezione(t('section.sintesi'));
+    generaNarrativa(mappa, lang).forEach((p) => paraBlocco(p, { size: 11.5 }));
 
     /* --- 2. I SEI NUMERI FONDAMENTALI --- */
     titoloSezione(t('pdf.sixNumbers'));

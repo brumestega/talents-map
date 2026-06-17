@@ -8,7 +8,7 @@ import { calcolaMappa, validaInput, verificaCalcoli } from './calculator.js';
 import { t, setLang, getCurrentLang, applicaTraduzioniDOM, onLangChange } from './i18n.js';
 import {
   mostraRisultati, rerenderSeVisibile, mostraForm, mostraLoader, apriStorico, chiudiStorico,
-  mostraDialogSalva, mostraBannerPrecedente, aggiornaHeaderAuth, generaPDF,
+  mostraDialogSalva, mostraBannerPrecedente, aggiornaHeaderAuth, generaPDF, mostraToast,
 } from './ui.js';
 import {
   salvaMappa, caricaUltimaMappa, salvaTema, caricaTema, salvaLang, caricaLang, storageDisponibile,
@@ -110,7 +110,7 @@ function validaForm() {
 /* FLUSSO PRINCIPALE                                                       */
 /* ----------------------------------------------------------------------- */
 const handlersRisultati = {
-  onNuovaMappa: () => { mostraForm(); track('nuova_mappa'); },
+  onNuovaMappa: () => { mostraForm(); pulisciHash(); track('nuova_mappa'); },
   onSalva: () => {
     const id = salvaMappa(ultimaMappaCalcolata);
     track('mappa_salvata', { id });
@@ -120,7 +120,47 @@ const handlersRisultati = {
       onSoloSalva: () => {},
     });
   },
+  onCondividi: async () => {
+    if (!ultimaMappaCalcolata) return;
+    const url = linkCondivisione(ultimaMappaCalcolata.input);
+    try { await navigator.clipboard.writeText(url); mostraToast(t('share.copied')); }
+    catch (_) { window.prompt(t('share.copyManual'), url); }
+    track('mappa_condivisa');
+  },
 };
+
+/* ----------------------------------------------------------------------- */
+/* CONDIVISIONE VIA LINK (input codificato nell'hash dell'URL)             */
+/* ----------------------------------------------------------------------- */
+function codificaInput(i) {
+  return btoa(encodeURIComponent(JSON.stringify({ n: i.nome, g: i.giorno, m: i.mese, a: i.anno, r: i.annoScelto })));
+}
+function decodificaInput(s) {
+  try { const o = JSON.parse(decodeURIComponent(atob(s))); return { nome: o.n, giorno: o.g, mese: o.m, anno: o.a, annoScelto: o.r }; }
+  catch (_) { return null; }
+}
+function leggiInputCondiviso() {
+  const h = location.hash.startsWith('#m=') ? location.hash.slice(3) : null;
+  const p = new URLSearchParams(location.search).get('m');
+  const raw = h || p;
+  return raw ? decodificaInput(decodeURIComponent(raw)) : null;
+}
+const linkCondivisione = (i) => `${location.origin}${location.pathname}${location.search}#m=${codificaInput(i)}`;
+function aggiornaHash(i) { try { history.replaceState(null, '', `${location.pathname}${location.search}#m=${codificaInput(i)}`); } catch (_) { /* noop */ } }
+function pulisciHash() { try { history.replaceState(null, '', location.pathname + location.search); } catch (_) { /* noop */ } }
+
+function compilaForm(i) {
+  if ($('#f-nome')) $('#f-nome').value = i.nome || '';
+  if ($('#f-giorno')) $('#f-giorno').value = i.giorno;
+  if ($('#f-mese')) $('#f-mese').value = String(i.mese);
+  if ($('#f-anno')) $('#f-anno').value = i.anno;
+  if ($('#f-anno-scelto')) $('#f-anno-scelto').value = i.annoScelto;
+  document.querySelectorAll('#mappa-form .field__input').forEach((c) => c.closest('.field')?.classList.toggle('field--filled', !!c.value));
+}
+function apriDaCondivisione(input) {
+  try { const valido = validaInput(input); compilaForm(valido); eseguiCalcolo(valido); track('mappa_condivisa_aperta'); }
+  catch (_) { /* link non valido: ignora, resta il form */ }
+}
 
 let ultimaMappaCalcolata = null;
 
@@ -131,6 +171,7 @@ function eseguiCalcolo(input) {
     const mappa = calcolaMappa(valido);
     ultimaMappaCalcolata = mappa;
     salvaMappa(mappa);
+    aggiornaHash(valido); // rende l'URL condivisibile
     setTimeout(() => {
       mostraLoader(false);
       mostraRisultati(mappa, handlersRisultati);
@@ -146,14 +187,8 @@ function eseguiCalcolo(input) {
 
 function riapriMappa(mappa) {
   ultimaMappaCalcolata = mappa;
-  // Ripristina i campi del form dalla mappa riaperta
-  const i = mappa.input;
-  if ($('#f-nome')) $('#f-nome').value = i.nome || '';
-  if ($('#f-giorno')) $('#f-giorno').value = i.giorno;
-  if ($('#f-mese')) $('#f-mese').value = String(i.mese);
-  if ($('#f-anno')) $('#f-anno').value = i.anno;
-  if ($('#f-anno-scelto')) $('#f-anno-scelto').value = i.annoScelto;
-  document.querySelectorAll('#mappa-form .field__input').forEach((c) => c.closest('.field')?.classList.toggle('field--filled', !!c.value));
+  compilaForm(mappa.input);
+  aggiornaHash(mappa.input);
   mostraRisultati(mappa, handlersRisultati);
 }
 
@@ -221,8 +256,11 @@ function init() {
   // Header autenticazione (pulsante Accedi / nome+badge+Esci)
   aggiornaHeaderAuth();
 
-  // Banner mappa precedente
-  if (config.showStorico) {
+  // Mappa condivisa via link (ha priorità sul banner), altrimenti banner mappa precedente
+  const condiviso = leggiInputCondiviso();
+  if (condiviso) {
+    apriDaCondivisione(condiviso);
+  } else if (config.showStorico) {
     const ultima = caricaUltimaMappa();
     if (ultima) mostraBannerPrecedente(ultima, { onRivedi: riapriMappa });
   }
